@@ -1,0 +1,6 @@
+{
+  "name": "AI-Based Smart City Management and Intelligent Issue Resolution System",
+  "description": "An AI-assisted decision-support platform connecting citizens with municipal authorities for intelligent complaint classification, geographic hotspot detection, and transparent resolution workflows.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

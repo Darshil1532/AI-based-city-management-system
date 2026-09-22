@@ -1,0 +1,231 @@
+import React from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { useApp } from '../../context/AppContext';
+import {
+  LayoutDashboard,
+  PlusCircle,
+  FileText,
+  Search,
+  MapPin,
+  Flame,
+  BarChart3,
+  Lightbulb,
+  Building,
+  Settings,
+  HelpCircle,
+  Home,
+  ShieldCheck,
+  Radio,
+  Keyboard,
+} from 'lucide-react';
+
+interface SidebarProps {
+  onCloseMobile?: () => void;
+  isOpenMobile?: boolean;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, isOpenMobile }) => {
+  const { activePersona, complaints, allComplaints, hotspots, aiInsights, setIsShortcutsModalOpen } = useApp();
+  const location = useLocation();
+
+  const pendingCount = (allComplaints || complaints).filter((c) => c.status === 'submitted').length;
+  const activeHotspotsCount = hotspots.filter((h) => h.status === 'active').length;
+  const newInsightsCount = aiInsights.filter((i) => i.status === 'new').length;
+
+  const citizenNavItems = [
+    {
+      to: '/citizen/dashboard',
+      label: 'Dashboard',
+      icon: LayoutDashboard,
+      badge: null,
+    },
+    {
+      to: '/citizen/report',
+      label: 'Report an Issue',
+      icon: PlusCircle,
+      badge: 'New',
+      badgeColor: 'bg-blue-600 text-white',
+    },
+    {
+      to: '/citizen/my-complaints',
+      label: 'My Complaints',
+      icon: FileText,
+      badge: complaints.length.toString(),
+    },
+    {
+      to: '/track',
+      label: 'Track Complaint',
+      icon: Search,
+      badge: null,
+    },
+    {
+      to: '/citizen/map',
+      label: 'City Issue Map',
+      icon: MapPin,
+      badge: null,
+    },
+  ];
+
+  const adminNavItems = [
+    {
+      to: '/admin/dashboard',
+      label: 'Overview & Triage',
+      icon: LayoutDashboard,
+      badge: null,
+    },
+    {
+      to: '/admin/complaints',
+      label: 'All Complaints',
+      icon: FileText,
+      badge: pendingCount > 0 ? `${pendingCount} new` : null,
+      badgeColor: 'bg-amber-100 text-amber-800',
+    },
+    {
+      to: '/admin/map',
+      label: 'Geographic GIS Map',
+      icon: MapPin,
+      badge: null,
+    },
+    {
+      to: '/admin/hotspots',
+      label: 'Hotspot Detection',
+      icon: Flame,
+      badge: activeHotspotsCount > 0 ? `${activeHotspotsCount} active` : null,
+      badgeColor: 'bg-rose-100 text-rose-800',
+    },
+    {
+      to: '/admin/analytics',
+      label: 'Analytics & KPIs',
+      icon: BarChart3,
+      badge: null,
+    },
+    {
+      to: '/admin/insights',
+      label: 'AI Recommendations',
+      icon: Lightbulb,
+      badge: newInsightsCount > 0 ? `${newInsightsCount} alert` : null,
+      badgeColor: 'bg-blue-100 text-blue-800',
+    },
+    {
+      to: '/admin/departments',
+      label: 'Municipal Departments',
+      icon: Building,
+      badge: null,
+    },
+    {
+      to: '/admin/settings',
+      label: 'System & Maps Config',
+      icon: Settings,
+      badge: null,
+    },
+  ];
+
+  const items = activePersona === 'admin' ? adminNavItems : citizenNavItems;
+
+  return (
+    <aside className="w-64 bg-white border-r border-slate-200/80 flex flex-col shrink-0 min-h-[calc(100vh-4rem)]">
+      {/* Context Badge */}
+      <div className="p-4 border-b border-slate-100/90 bg-slate-50/40">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+            {activePersona === 'admin' ? 'Administrative Suite' : 'Citizen Services'}
+          </span>
+          <span className="flex items-center gap-1.5 text-[10px] text-emerald-700 font-semibold bg-emerald-50/90 border border-emerald-200/60 px-2 py-0.5 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Live System
+          </span>
+        </div>
+        <p className="text-xs font-bold text-slate-900 mt-1.5 tracking-tight">
+          {activePersona === 'admin'
+            ? 'City Operations Center'
+            : 'Public Civic Portal'}
+        </p>
+      </div>
+
+      {/* Navigation List */}
+      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+        {items.map((item) => {
+          const Icon = item.icon;
+          const isActive =
+            location.pathname === item.to ||
+            (item.to !== '/admin/dashboard' &&
+              item.to !== '/citizen/dashboard' &&
+              location.pathname.startsWith(item.to));
+
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              onClick={onCloseMobile}
+              className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                isActive
+                  ? activePersona === 'admin'
+                    ? 'bg-slate-900 text-white shadow-2xs font-semibold'
+                    : 'bg-blue-600 text-white shadow-2xs font-semibold'
+                  : 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-900'
+              }`}
+            >
+              <div className="flex items-center gap-2.5 truncate">
+                <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                <span className="truncate">{item.label}</span>
+              </div>
+              {item.badge && (
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold shrink-0 ml-1.5 transition-colors ${
+                    isActive
+                      ? 'bg-white/20 text-white'
+                      : item.badgeColor || 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  {item.badge}
+                </span>
+              )}
+            </NavLink>
+          );
+        })}
+
+        <div className="pt-3 pb-1 border-t border-slate-100/90 mt-3">
+          <span className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1 font-mono">
+            Navigation
+          </span>
+          <NavLink
+            to="/"
+            onClick={onCloseMobile}
+            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100/70 hover:text-slate-900 transition-colors"
+          >
+            <Home className="w-4 h-4 text-slate-400" />
+            <span>Public Home & Workflow</span>
+          </NavLink>
+
+          <button
+            type="button"
+            onClick={() => {
+              onCloseMobile?.();
+              setIsShortcutsModalOpen(true);
+            }}
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100/70 hover:text-slate-900 transition-colors cursor-pointer mt-1"
+          >
+            <div className="flex items-center gap-2.5">
+              <Keyboard className="w-4 h-4 text-slate-400" />
+              <span>Keyboard Shortcuts</span>
+            </div>
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold text-slate-500 bg-slate-100 rounded border border-slate-200">
+              ?
+            </kbd>
+          </button>
+        </div>
+      </nav>
+
+      {/* Footer Info Box */}
+      <div className="p-3.5 border border-slate-200/60 bg-slate-50/80 m-3 rounded-xl">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+          <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+          <span>Decision Support</span>
+        </div>
+        <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+          AI suggests triage priority & routing. City officials authorize all municipal work orders.
+        </p>
+      </div>
+    </aside>
+  );
+};
