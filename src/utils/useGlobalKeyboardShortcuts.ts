@@ -18,6 +18,9 @@ export const useGlobalKeyboardShortcuts = () => {
     setIsAuthModalOpen,
     isShortcutsModalOpen,
     setIsShortcutsModalOpen,
+    isCommandBarOpen,
+    closeCommandBar,
+    openCommandBar,
   } = useApp();
 
   const [feedback, setFeedback] = useState<ShortcutFeedback | null>(null);
@@ -48,6 +51,11 @@ export const useGlobalKeyboardShortcuts = () => {
       if (e.key === 'Escape') {
         let handled = false;
 
+        if (isCommandBarOpen) {
+          closeCommandBar();
+          handled = true;
+        }
+
         if (isShortcutsModalOpen) {
           setIsShortcutsModalOpen(false);
           handled = true;
@@ -72,7 +80,7 @@ export const useGlobalKeyboardShortcuts = () => {
         return;
       }
 
-      // 2. SEARCH FOCUS: '/' or 'Cmd+K' / 'Ctrl+K'
+      // 2. SEARCH FOCUS & COMMAND PALETTE: '/' or 'Cmd+K' / 'Ctrl+K'
       const isSearchShortcut =
         (!isInput && e.key === '/') ||
         ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k');
@@ -81,17 +89,8 @@ export const useGlobalKeyboardShortcuts = () => {
         e.preventDefault();
         e.stopPropagation();
 
-        // Priority 1: Page specific search input if present (e.g., in complaints table)
-        // Priority 2: Global header search input
-        const pageSearch = document.getElementById('page-search-input') as HTMLInputElement | null;
-        const globalSearch = document.getElementById('global-search-input') as HTMLInputElement | null;
-        const targetInput = globalSearch || pageSearch;
-
-        if (targetInput) {
-          targetInput.focus();
-          targetInput.select();
-          showFeedback(e.key === '/' ? '/' : '⌘K', 'Search focused');
-        }
+        openCommandBar();
+        showFeedback(e.key === '/' ? '/' : '⌘K', 'Command Bar opened');
         return;
       }
 

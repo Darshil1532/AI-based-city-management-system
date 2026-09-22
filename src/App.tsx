@@ -6,6 +6,7 @@ import { Sidebar } from './components/common/Sidebar';
 import { SignInModal } from './components/common/SignInModal';
 import { KeyboardShortcutsModal } from './components/common/KeyboardShortcutsModal';
 import { KeyboardShortcutFeedback } from './components/common/KeyboardShortcutFeedback';
+import { GlobalCommandBar } from './components/common/GlobalCommandBar';
 import { useGlobalKeyboardShortcuts } from './utils/useGlobalKeyboardShortcuts';
 import { AdminRouteGuard } from './components/common/AdminRouteGuard';
 
@@ -48,6 +49,9 @@ const AppLayout: React.FC = () => {
 
       {/* Global Keyboard Shortcuts Cheat Sheet Modal */}
       <KeyboardShortcutsModal />
+
+      {/* Global Command Bar & Database Search Palette */}
+      <GlobalCommandBar />
 
       {/* Ephemeral Toast Feedback for Active Shortcut Sequences */}
       <KeyboardShortcutFeedback feedback={feedback} />

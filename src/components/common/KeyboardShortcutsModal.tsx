@@ -25,18 +25,19 @@ const SHORTCUTS: ShortcutDefinition[] = [
   // Global & Search
   {
     keys: ['/'],
-    description: 'Focus global search input immediately',
+    description: 'Open global command bar & query database',
     category: 'Global & Search',
     badge: 'Fast',
   },
   {
     keys: ['⌘', 'K'],
-    description: 'Open & focus global search command input',
+    description: 'Open global command bar & query database',
     category: 'Global & Search',
+    badge: 'Palette',
   },
   {
     keys: ['Esc'],
-    description: 'Close active modals, dismiss dropdowns & clear focus',
+    description: 'Close active modals, dismiss command bar & clear focus',
     category: 'Global & Search',
     badge: 'Universal',
   },

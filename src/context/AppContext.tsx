@@ -18,8 +18,11 @@ import { complaintService } from '../services/storage/complaintService';
 import { hotspotService } from '../services/storage/hotspotService';
 import { insightService } from '../services/storage/insightService';
 import { notificationService } from '../services/storage/notificationService';
+import { departmentService } from '../services/storage/departmentService';
+import { globalSearchService, SearchDatabaseOptions } from '../services/storage/globalSearchService';
 import { authService, DEMO_CITIZEN, DEMO_ADMIN } from '../services/storage/authService';
 import { aiService } from '../services/ai/AIService';
+import { GlobalSearchResults } from '../types';
 
 export { DEMO_CITIZEN, DEMO_ADMIN };
 
@@ -30,6 +33,14 @@ export interface AppContextType {
   myComplaints: Complaint[]; // Complaints belonging to current logged-in user
   lastSubmittedComplaint: Complaint | null;
   getComplaintById: (id: string) => Complaint | undefined;
+
+  // Global Search & Database Querying
+  searchDatabase: (query: string, options?: SearchDatabaseOptions) => GlobalSearchResults;
+  isCommandBarOpen: boolean;
+  setIsCommandBarOpen: (open: boolean) => void;
+  commandBarInitialQuery: string;
+  openCommandBar: (initialQuery?: string) => void;
+  closeCommandBar: () => void;
 
   // Complaint Operations & Human-in-the-Loop Decisions
   submitComplaint: (data: {
@@ -121,10 +132,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
   const [hotspotsList, setHotspotsList] = useState<Hotspot[]>(() => hotspotService.getAll());
   const [insightsList, setInsightsList] = useState<AIInsight[]>(() => insightService.getAll());
-  const [departments] = useState<DepartmentInfo[]>(INITIAL_DEPARTMENTS);
+  const [departmentsList, setDepartmentsList] = useState<DepartmentInfo[]>(() =>
+    departmentService.getAll()
+  );
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
+  const [isCommandBarOpen, setIsCommandBarOpen] = useState(false);
+  const [commandBarInitialQuery, setCommandBarInitialQuery] = useState('');
   const [lastSubmittedComplaint, setLastSubmittedComplaint] = useState<Complaint | null>(null);
+
+  const openCommandBar = useCallback((initialQuery: string = '') => {
+    setCommandBarInitialQuery(initialQuery);
+    setIsCommandBarOpen(true);
+  }, []);
+
+  const closeCommandBar = useCallback(() => {
+    setIsCommandBarOpen(false);
+    setCommandBarInitialQuery('');
+  }, []);
+
+  const searchDatabase = useCallback((query: string, options?: SearchDatabaseOptions) => {
+    return globalSearchService.searchDatabase(query, options);
+  }, []);
   const [aiProviderType, setAiProviderType] = useState<'Gemini' | 'Demo AI'>(() =>
     aiService.getActiveProviderType()
   );
@@ -657,11 +686,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const resetHotspots = hotspotService.reset();
     const resetInsights = insightService.reset();
     const resetNotifs = notificationService.reset();
+    const resetDepts = departmentService.reset();
 
     setAllComplaintsList(resetComplaints);
     setHotspotsList(resetHotspots);
     setInsightsList(resetInsights);
     setNotificationsList(resetNotifs);
+    setDepartmentsList(resetDepts);
     setLastSubmittedComplaint(null);
   };
 
@@ -675,6 +706,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         myComplaints,
         lastSubmittedComplaint,
         getComplaintById,
+        searchDatabase,
+        isCommandBarOpen,
+        setIsCommandBarOpen,
+        commandBarInitialQuery,
+        openCommandBar,
+        closeCommandBar,
         submitComplaint,
         ratifyAIRecommendation,
         overrideAIRecommendation,
@@ -688,7 +725,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateInsightStatus,
         applyInsightAction,
         dismissInsight,
-        departments,
+        departments: departmentsList,
         currentUser,
         activePersona: currentUser.role,
         setActivePersona,

@@ -188,3 +188,24 @@ export interface NotificationItem {
   link?: string;
 }
 
+export interface ComplaintSearchResult {
+  item: Complaint;
+  matchedFields: string[];
+  snippet?: string;
+  score: number;
+}
+
+export interface DepartmentSearchResult {
+  item: DepartmentInfo;
+  matchedFields: string[];
+  snippet?: string;
+  score: number;
+}
+
+export interface GlobalSearchResults {
+  query: string;
+  complaints: ComplaintSearchResult[];
+  departments: DepartmentSearchResult[];
+  totalMatches: number;
+}
+

@@ -4,6 +4,7 @@ import { useApp } from '../../context/AppContext';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { PriorityBadge } from '../../components/common/PriorityBadge';
 import { AIDecisionDisclaimer } from '../../components/common/AIDecisionDisclaimer';
+import { DashboardCommandBar } from '../../components/admin/DashboardCommandBar';
 import {
   Complaint,
   ComplaintCategory,
@@ -68,7 +69,10 @@ export const AdminDashboard: React.FC = () => {
         c.id.toLowerCase().includes(q) ||
         c.title.toLowerCase().includes(q) ||
         c.description.toLowerCase().includes(q) ||
+        (c.category && c.category.toLowerCase().includes(q)) ||
+        (c.department && c.department.toLowerCase().includes(q)) ||
         c.location.address.toLowerCase().includes(q) ||
+        (c.location.landmark && c.location.landmark.toLowerCase().includes(q)) ||
         (c.citizenName && c.citizenName.toLowerCase().includes(q));
 
       const matchesCat = categoryFilter === 'all' || c.category === categoryFilter;
@@ -308,22 +312,22 @@ export const AdminDashboard: React.FC = () => {
           )}
         </div>
 
-        <div className="flex flex-col md:flex-row gap-3">
-          {/* Search */}
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
-              placeholder="Search by ID (e.g. SC1024), keywords, street, or citizen name..."
-              className="w-full pl-9 pr-3.5 py-2 text-xs bg-slate-50 hover:bg-slate-100/70 focus:bg-white text-slate-900 border border-slate-200/90 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400/10 focus:border-slate-400 transition-all"
-            />
-          </div>
-        </div>
+        {/* Global Database Search & Command Bar directly on Dashboard */}
+        <DashboardCommandBar
+          currentSearchQuery={searchQuery}
+          onSearchChange={(newQ) => {
+            setSearchQuery(newQ);
+            setCurrentPage(1);
+          }}
+          activeDepartmentFilter={departmentFilter}
+          onDepartmentSelect={(deptName) => {
+            setDepartmentFilter(deptName);
+            setCurrentPage(1);
+          }}
+          onComplaintSelect={(complaintId) => {
+            navigate(`/admin/complaint/${complaintId}`);
+          }}
+        />
 
         {/* Secondary Filter Dropdowns Row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1 text-xs">

@@ -39,6 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
     setIsAuthModalOpen,
     isShortcutsModalOpen,
     setIsShortcutsModalOpen,
+    openCommandBar,
     notifications,
     unreadNotificationCount,
     markNotificationRead,
@@ -85,29 +86,11 @@ export const Header: React.FC<HeaderProps> = ({
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const rawQuery = searchQuery.trim();
-    if (!rawQuery) return;
-    const upper = rawQuery.toUpperCase();
-
-    // Check if searching for a complaint ID (e.g. SC-8921, SC8921, CMP-101, or numeric)
-    const isIdPattern = upper.startsWith('SC') || upper.startsWith('CMP') || /^\d+$/.test(upper);
-
-    if (isIdPattern) {
-      const formatted = upper.startsWith('SC') || upper.startsWith('CMP')
-        ? upper
-        : `SC-${upper}`;
-
-      if (activePersona === 'admin') {
-        navigate(`/admin/complaint/${formatted}`);
-      } else {
-        navigate(`/track?id=${formatted}`);
-      }
-    } else {
-      if (activePersona === 'admin') {
-        navigate(`/admin/complaints?search=${encodeURIComponent(rawQuery)}`);
-      } else {
-        navigate(`/citizen/my-complaints?search=${encodeURIComponent(rawQuery)}`);
-      }
+    if (!rawQuery) {
+      openCommandBar();
+      return;
     }
+    openCommandBar(rawQuery);
     setSearchQuery('');
   };
 
@@ -178,19 +161,20 @@ export const Header: React.FC<HeaderProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onClick={() => openCommandBar(searchQuery)}
                 onKeyDown={(e) => {
                   if (e.key === 'Escape') {
                     searchInputRef.current?.blur();
                   }
                 }}
-                placeholder="Search complaint ID (e.g. SC1024) or address..."
-                className="w-full pl-9 pr-14 py-1.5 text-xs bg-slate-50 hover:bg-slate-100/80 focus:bg-white text-slate-900 placeholder:text-slate-400 rounded-lg border border-slate-200/80 focus:border-slate-400 focus:ring-2 focus:ring-slate-400/10 focus:outline-none transition-all"
+                placeholder="Search complaints or departments..."
+                className="w-full pl-9 pr-14 py-1.5 text-xs bg-slate-50 hover:bg-slate-100/80 focus:bg-white text-slate-900 placeholder:text-slate-400 rounded-lg border border-slate-200/80 focus:border-slate-400 focus:ring-2 focus:ring-slate-400/10 focus:outline-none transition-all cursor-pointer"
               />
               <button
                 type="button"
-                onClick={() => searchInputRef.current?.focus()}
+                onClick={() => openCommandBar(searchQuery)}
                 className="hidden lg:inline-flex items-center justify-center absolute right-2 top-1/2 -translate-y-1/2 h-5 px-1.5 text-[10px] font-mono text-slate-400 hover:text-slate-700 bg-white hover:bg-slate-50 rounded border border-slate-200 shadow-2xs cursor-pointer transition-colors"
-                title="Press / or ⌘K to focus search"
+                title="Press / or ⌘K to open command palette"
               >
                 /
               </button>
