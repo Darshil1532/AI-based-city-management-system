@@ -115,12 +115,16 @@ export interface Hotspot {
     longitude: number;
   };
   radiusMeters: number;
+  radius?: number; // Alias for radiusMeters
   complaintCount: number;
   complaintIds: string[];
+  categories?: ComplaintCategory[];
   mainCategories: { category: ComplaintCategory; count: number }[];
   timePeriod: string;
   riskLevel: 'Low' | 'Moderate' | 'High' | 'Critical';
   severity?: 'Low' | 'Medium' | 'High';
+  confidence?: number;
+  detectionNote?: string;
   suggestedAction: string;
   status: 'active' | 'investigating' | 'addressed';
   lastDetected: string;

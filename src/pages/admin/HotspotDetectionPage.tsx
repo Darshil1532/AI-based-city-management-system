@@ -180,8 +180,8 @@ export const HotspotDetectionPage: React.FC = () => {
                       </span>
                     </div>
 
-                    {/* Complaint count & timeframe */}
-                    <div className={`mt-3 grid grid-cols-2 gap-2 text-xs p-2 rounded-lg border ${
+                    {/* Complaint count, timeframe & confidence */}
+                    <div className={`mt-3 grid grid-cols-3 gap-2 text-xs p-2 rounded-lg border ${
                       isSelected ? 'bg-white/5 border-white/10' : 'bg-slate-50/70 border-slate-100'
                     }`}>
                       <div>
@@ -196,6 +196,18 @@ export const HotspotDetectionPage: React.FC = () => {
                           {hs.timePeriod}
                         </span>
                       </div>
+                      <div>
+                        <span className={`text-[10px] block font-mono ${isSelected ? 'text-slate-400' : 'text-slate-400'}`}>Confidence:</span>
+                        <span className={`font-bold ${isSelected ? 'text-emerald-300' : 'text-emerald-700'}`}>
+                          {Math.round((hs.confidence ?? 0.88) * 100)}%
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Detection Note */}
+                    <div className="mt-2 text-[11px] italic text-slate-500 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                      <span>{hs.detectionNote || 'Potential hotspot detected from repeated reports.'}</span>
                     </div>
 
                     {/* Category Breakdown */}

@@ -3,6 +3,7 @@ import L from 'leaflet';
 import { Complaint, Hotspot, ComplaintCategory } from '../../types';
 import { CITY_BOUNDS, POPULAR_LANDMARKS } from '../../data/mockData';
 import { GoogleMapCanvas } from './GoogleMapCanvas';
+import { escapeHtml, safeText } from '../../utils/domSafe';
 import {
   MapPin,
   Flame,
@@ -499,12 +500,12 @@ export const SmartCityMap: React.FC<SmartCityMapProps> = ({
         }
 
         <div style="font-size: 13px; font-weight: 700; color: #0f172a; line-height: 1.3; margin-bottom: 6px;">${
-          complaint.title
+          escapeHtml(complaint.title)
         }</div>
         
         <div style="font-size: 11px; color: #64748b; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 4px;">
           <span>📍</span>
-          <span>${complaint.location.address || complaint.location.district || 'Municipal Sector'}</span>
+          <span>${escapeHtml(complaint.location.address || complaint.location.district || 'Municipal Sector')}</span>
         </div>
 
         <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 8px; border-top: 1px solid #f1f5f9; margin-top: 6px;">
@@ -637,8 +638,8 @@ export const SmartCityMap: React.FC<SmartCityMapProps> = ({
           }">${hs.riskLevel} Risk</span>
         </div>
 
-        <div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">${hs.name}</div>
-        <div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">${hs.locationName} &bull; ${hs.radiusMeters}m radius</div>
+        <div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">${escapeHtml(hs.name)}</div>
+        <div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">${escapeHtml(hs.locationName)} &bull; ${hs.radius || hs.radiusMeters}m radius</div>
 
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; margin-bottom: 8px;">
           <div style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 4px; font-family: monospace;">Category Breakdown:</div>
@@ -648,14 +649,14 @@ export const SmartCityMap: React.FC<SmartCityMapProps> = ({
                 (c) =>
                   `<span style="font-size: 10px; background: white; border: 1px solid #cbd5e1; padding: 2px 6px; border-radius: 4px; font-weight: 600; color: #334155;">${
                     c.count
-                  } ${c.category.split('/')[0].trim()}</span>`
+                  } ${escapeHtml(c.category.split('/')[0].trim())}</span>`
               )
               .join('')}
           </div>
         </div>
 
         <div style="font-size: 11px; color: #334155; line-height: 1.4; margin-bottom: 10px; background: #fff7ed; padding: 8px; border-radius: 6px; border: 1px solid #fed7aa;">
-          <strong style="color: #9a3412;">AI Triaging Advice:</strong> "${hs.suggestedAction}"
+          <strong style="color: #9a3412;">Dynamic Cluster Note:</strong> "${escapeHtml(hs.detectionNote || 'Potential hotspot detected from repeated reports.')}"
         </div>
 
         <button id="btn-inspect-${hs.id}" style="width: 100%; font-size: 11px; font-weight: 700; color: white; background: #0f172a; border: none; border-radius: 6px; padding: 6px 12px; cursor: pointer;">
@@ -794,16 +795,21 @@ export const SmartCityMap: React.FC<SmartCityMapProps> = ({
           complaints={filteredComplaints}
           hotspots={hotspots}
           selectedComplaintId={selectedComplaintId}
+          selectedHotspotId={selectedHotspotId}
           onSelectComplaint={(id) => {
             const c = complaints.find((item) => item.id === id);
             if (c && onSelectComplaint) onSelectComplaint(c);
+          }}
+          onSelectHotspot={(id) => {
+            const h = hotspots.find((item) => item.id === id);
+            if (h && onSelectHotspot) onSelectHotspot(h);
           }}
           selectable={selectable}
           selectedLocation={selectedLocation}
           onLocationSelect={onLocationSelect}
           showHotspots={showHotspots}
           onLoadError={(err) => {
-            console.warn('[SmartCityMap] Google Maps load failed, falling back to Leaflet GIS:', err);
+            console.warn('[SmartCityMap] Google Maps load failed, falling back to Demo GIS Map:', err);
             setGoogleMapsError(err);
             setUseGoogleMaps(false);
           }}
@@ -1133,11 +1139,13 @@ export const SmartCityMap: React.FC<SmartCityMapProps> = ({
         <div className="bg-slate-900/90 backdrop-blur-md px-2.5 py-1.5 rounded-lg text-[10px] font-mono text-slate-300 flex items-center gap-2 border border-slate-700 shadow-md">
           <span
             className={`w-2 h-2 rounded-full ${
-              useGoogleMaps && !googleMapsError ? 'bg-emerald-400 animate-pulse' : 'bg-blue-400'
+              useGoogleMaps && googleMapsApiKey && !googleMapsError
+                ? 'bg-emerald-400 animate-pulse'
+                : 'bg-amber-400'
             }`}
           />
           <span className="font-semibold text-white">
-            Map Provider: {useGoogleMaps && !googleMapsError ? 'Google Maps' : 'Fallback GIS (Leaflet)'}
+            {useGoogleMaps && googleMapsApiKey && !googleMapsError ? 'Google Maps' : 'Demo GIS Map'}
           </span>
           <span className="text-slate-500">&bull;</span>
           <span>
@@ -1153,7 +1161,7 @@ export const SmartCityMap: React.FC<SmartCityMapProps> = ({
                 onClick={() => setUseGoogleMaps(!useGoogleMaps)}
                 className="text-[10px] font-semibold text-indigo-400 hover:text-indigo-300 underline cursor-pointer"
               >
-                Use {useGoogleMaps ? 'Leaflet' : 'Google Maps'}
+                Switch to {useGoogleMaps ? 'Demo GIS Map' : 'Google Maps'}
               </button>
             </>
           )}
