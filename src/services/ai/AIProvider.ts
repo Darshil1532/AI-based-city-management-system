@@ -13,8 +13,8 @@ export interface AIAnalysisResult {
   category: ComplaintCategory;
   priority: PriorityLevel;
   department: DepartmentName;
-  confidence: number; // 0.0 to 1.0 (e.g. 0.94)
-  confidencePercent: number; // 0 to 100
+  confidence?: number; // 0.0 to 1.0 (e.g. 0.94)
+  confidencePercent?: number; // 0 to 100
   reasoning: string;
   factors: string[];
   publicImpactScore: number; // 1 to 10
@@ -22,6 +22,7 @@ export interface AIAnalysisResult {
   provider: AIProviderType;
   providerLabel: string;
   timestamp: string;
+  isHeuristicPreview?: boolean;
 }
 
 export interface AIInsightPattern {

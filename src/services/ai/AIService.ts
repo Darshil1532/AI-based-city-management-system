@@ -38,7 +38,7 @@ export class AIServiceManager {
   }
 
   getActiveProviderLabel(): string {
-    return this.getActiveProvider().label;
+    return this.activeProviderType === 'Gemini' ? 'Gemini 2.5 Flash' : 'Demo AI';
   }
 
   setForcedProvider(type: AIProviderType) {
@@ -73,7 +73,9 @@ export class AIServiceManager {
     }
   }
 
-  // Fast synchronous analysis for real-time live preview as user types
+  // Fast synchronous analysis for real-time live preview as user types.
+  // Clearly labeled as Heuristic Preview — not Gemini.
+  // Removes dead/unused async code and avoids fake confidence scores.
   analyzeComplaintSync(
     description: string,
     userCategory?: ComplaintCategory,
@@ -81,69 +83,24 @@ export class AIServiceManager {
     location?: LocationCoordinates,
     existingComplaints: Complaint[] = []
   ): AIAnalysisResult {
-    // Demo provider runs synchronously and instantly without network lag
-    let result: AIAnalysisResult;
-    this.demoProvider.classifyComplaint(
+    const heuristicResult = this.demoProvider.classifyComplaintSync(
       description,
       userCategory,
       userSeverity,
       location,
       existingComplaints
-    ).then((r) => {
-      result = r;
-    });
+    );
 
-    // Provide immediate result
-    const text = (description || '').toLowerCase();
-    const factors: string[] = [];
-    let cat: ComplaintCategory = userCategory || 'Other';
-    let dept: any = 'Public Works Department';
-    let priority: any = userSeverity || 'Medium';
-
-    if (text.includes('pothole') || text.includes('road')) {
-      cat = 'Pothole / Road';
-      dept = 'Public Works Department';
-      factors.push('Road surface deterioration keyword match');
-    } else if (text.includes('garbage') || text.includes('waste')) {
-      cat = 'Garbage / Waste';
-      dept = 'Sanitation Department';
-      factors.push('Solid waste accumulation pattern');
-    } else if (text.includes('water') || text.includes('leak')) {
-      cat = 'Water Leakage';
-      dept = 'Water Supply Department';
-      factors.push('Water utility leak keywords');
-    } else if (text.includes('light') || text.includes('pole')) {
-      cat = 'Streetlight';
-      dept = 'Electrical Department';
-      factors.push('Streetlight / grid keywords');
-    } else if (text.includes('traffic') || text.includes('signal')) {
-      cat = 'Traffic';
-      dept = 'Traffic & Transit Department';
-      factors.push('Traffic congestion signs');
-    } else if (text.includes('bridge') || text.includes('infra')) {
-      cat = 'Infrastructure';
-      dept = 'Urban Infrastructure Division';
-      factors.push('Structural civil asset damage');
-    }
-
-    if (text.includes('danger') || text.includes('hazard') || text.includes('accident') || userSeverity === 'High') {
-      priority = 'High';
-      factors.push('Elevated risk indicator detected');
-    }
+    const targetModel = this.activeProviderType === 'Gemini' ? 'Gemini 2.5 Flash' : 'Demo AI';
 
     return {
-      category: cat,
-      priority,
-      department: dept,
-      confidence: 0.93,
-      confidencePercent: 93,
-      reasoning: `${cat} issue triage recommended to ${dept} at ${priority} priority.`,
-      factors: factors.length > 0 ? factors : ['Direct user category and severity classification'],
-      publicImpactScore: priority === 'High' ? 8 : priority === 'Medium' ? 5 : 3,
-      urgencyIndicators: priority === 'High' ? ['Immediate municipal attention suggested'] : [],
-      provider: this.activeProviderType,
-      providerLabel: this.getActiveProviderLabel(),
-      timestamp: new Date().toISOString(),
+      ...heuristicResult,
+      isHeuristicPreview: true,
+      provider: 'Demo AI',
+      providerLabel: 'Heuristic Preview — not Gemini',
+      confidence: undefined,
+      confidencePercent: undefined,
+      reasoning: `Heuristic rule-based preview based on civic keywords and user inputs. Official AI decision-support analysis will be processed using ${targetModel} upon submission.`,
     };
   }
 

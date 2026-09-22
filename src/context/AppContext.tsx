@@ -23,6 +23,7 @@ import { globalSearchService, SearchDatabaseOptions } from '../services/storage/
 import { authService, DEMO_CITIZEN, DEMO_ADMIN } from '../services/storage/authService';
 import { aiService } from '../services/ai/AIService';
 import { GlobalSearchResults } from '../types';
+import { useAuth } from './AuthContext';
 
 export { DEMO_CITIZEN, DEMO_ADMIN };
 
@@ -33,6 +34,7 @@ export interface AppContextType {
   myComplaints: Complaint[]; // Complaints belonging to current logged-in user
   lastSubmittedComplaint: Complaint | null;
   getComplaintById: (id: string) => Complaint | undefined;
+  getComplaintForCitizen: (id: string, citizenId: string) => Complaint | undefined;
 
   // Global Search & Database Querying
   searchDatabase: (query: string, options?: SearchDatabaseOptions) => GlobalSearchResults;
@@ -80,6 +82,26 @@ export interface AppContextType {
   updateComplaint: (id: string, updates: Partial<Complaint>) => void;
   resolveComplaint: (id: string, resolutionDetails?: string) => void;
 
+  // Batch Operations
+  bulkAssignDepartment: (
+    ids: string[],
+    department: DepartmentName,
+    officer?: string,
+    notes?: string
+  ) => void;
+  bulkUpdateStatus: (
+    ids: string[],
+    newStatus: ComplaintStatus,
+    notes?: string,
+    resolutionDetails?: string
+  ) => void;
+  bulkUpdatePriority: (
+    ids: string[],
+    priority: PriorityLevel,
+    notes?: string
+  ) => void;
+  bulkRatifyAIRecommendations: (ids: string[]) => void;
+
   // Hotspots & Clustering
   hotspots: Hotspot[];
   recalculateHotspotsNow: () => void;
@@ -98,9 +120,12 @@ export interface AppContextType {
 
   // Authentication & Clearance
   currentUser: UserProfile;
+  role: 'citizen' | 'admin';
+  isAuthenticated: boolean;
   activePersona: 'citizen' | 'admin';
   setActivePersona: (persona: 'citizen' | 'admin') => void;
   loginAs: (role: 'citizen' | 'admin', customName?: string) => void;
+  login: (role: 'citizen' | 'admin', customName?: string) => void;
   logout: () => void;
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
@@ -125,8 +150,8 @@ export interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // State from storage services
-  const [currentUser, setCurrentUser] = useState<UserProfile>(() => authService.getCurrentUser());
+  const auth = useAuth();
+  const currentUser = auth.currentUser;
   const [allComplaintsList, setAllComplaintsList] = useState<Complaint[]>(() =>
     complaintService.getAll()
   );
@@ -151,9 +176,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCommandBarInitialQuery('');
   }, []);
 
-  const searchDatabase = useCallback((query: string, options?: SearchDatabaseOptions) => {
-    return globalSearchService.searchDatabase(query, options);
-  }, []);
+  const searchDatabase = useCallback(
+    (query: string, options?: SearchDatabaseOptions) => {
+      const opts: SearchDatabaseOptions = {
+        ...options,
+        citizenId: currentUser.role === 'citizen' ? currentUser.id : options?.citizenId,
+      };
+      return globalSearchService.searchDatabase(query, opts);
+    },
+    [currentUser]
+  );
   const [aiProviderType, setAiProviderType] = useState<'Gemini' | 'Demo AI'>(() =>
     aiService.getActiveProviderType()
   );
@@ -180,13 +212,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Auth Operations
   const setActivePersona = (persona: 'citizen' | 'admin') => {
-    const updated = authService.login(persona);
-    setCurrentUser(updated);
+    auth.login(persona);
   };
 
-  const loginAs = (role: 'citizen' | 'admin', customName?: string) => {
-    const updated = authService.login(role, customName);
-    setCurrentUser(updated);
+  const loginAs = (targetRole: 'citizen' | 'admin', customName?: string) => {
+    const updated = auth.login(targetRole, customName);
     setIsAuthModalOpen(false);
 
     // Generate real session notification
@@ -201,8 +231,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = () => {
-    authService.logout();
-    setCurrentUser(authService.getCurrentUser());
+    auth.logout();
     refreshNotifications();
   };
 
@@ -223,6 +252,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const getComplaintById = useCallback(
     (id: string): Complaint | undefined => {
       return complaintService.getById(id);
+    },
+    []
+  );
+
+  const getComplaintForCitizen = useCallback(
+    (id: string, citizenId: string): Complaint | undefined => {
+      return complaintService.getByIdForCitizen(id, citizenId);
     },
     []
   );
@@ -274,7 +310,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       aiCategory: aiAnalysis.category,
       aiPriority: aiAnalysis.priority,
       aiDepartment: aiAnalysis.department,
-      aiConfidence: aiAnalysis.confidence,
+      aiConfidence: aiAnalysis.confidence ?? 0.88,
       aiReasoning: aiAnalysis.reasoning,
       aiFactors: aiAnalysis.factors,
       aiProvider: aiAnalysis.provider,
@@ -282,12 +318,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Administrative Decision: Pending review
       reviewDecision: 'pending',
+      finalCategory: undefined,
+      finalPriority: undefined,
+      assignedDepartment: undefined,
+      reviewedBy: undefined,
+      reviewedAt: undefined,
 
       location: data.location,
       image: data.image,
       status: 'submitted',
-      priority: aiAnalysis.priority, // Preliminary priority tag until administrative determination
-      department: aiAnalysis.department,
+      priority: undefined,
+      department: undefined,
       citizenName: data.citizenName || currentUser.name,
       citizenPhone: data.citizenPhone || currentUser.phone || '+91 98260 12345',
       createdAt: now,
@@ -621,6 +662,234 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
+  // Bulk / Batch Operations
+  const bulkAssignDepartment = (
+    ids: string[],
+    department: DepartmentName,
+    officer?: string,
+    notes?: string
+  ) => {
+    if (!ids || ids.length === 0) return;
+    const now = new Date().toISOString();
+
+    ids.forEach((id) => {
+      const existing = complaintService.getById(id);
+      if (!existing) return;
+      const timeline = [...existing.timeline];
+      const newStatus: ComplaintStatus = existing.status === 'submitted' ? 'assigned' : existing.status;
+
+      timeline.push({
+        status: newStatus,
+        timestamp: now,
+        title: `Bulk Assigned to ${department}`,
+        description: notes || `Batch assignment by administrator (${currentUser.name}): Assigned to ${department}${officer ? ` (Officer: ${officer})` : ''}.`,
+        actor: currentUser.name,
+        badgeType: 'admin',
+      });
+
+      complaintService.update(id, {
+        department,
+        assignedDepartment: department,
+        status: newStatus,
+        assignedOfficer: officer || existing.assignedOfficer || 'Municipal Field Operations',
+        adminNotes: notes ? (existing.adminNotes ? `${existing.adminNotes} | ${notes}` : notes) : existing.adminNotes,
+        reviewedBy: currentUser.name,
+        reviewedAt: now,
+        timeline,
+      });
+
+      // Citizen notification
+      notificationService.add({
+        userId: existing.citizenId,
+        title: `Work Order Assigned: ${id}`,
+        message: `Your complaint was assigned to ${department}.`,
+        type: 'assigned',
+        link: `/track?id=${id}`,
+      });
+    });
+
+    const updatedAll = complaintService.getAll();
+    setAllComplaintsList(updatedAll);
+    setHotspotsList(hotspotService.detectClusters(updatedAll));
+
+    notificationService.add({
+      userId: 'admin',
+      title: `Batch Assignment Completed`,
+      message: `Assigned ${ids.length} complaint${ids.length > 1 ? 's' : ''} to ${department}.`,
+      type: 'admin_action',
+      link: '/admin/complaints',
+    });
+    refreshNotifications();
+  };
+
+  const bulkUpdateStatus = (
+    ids: string[],
+    newStatus: ComplaintStatus,
+    notes?: string,
+    resolutionDetails?: string
+  ) => {
+    if (!ids || ids.length === 0) return;
+    const now = new Date().toISOString();
+
+    ids.forEach((id) => {
+      const existing = complaintService.getById(id);
+      if (!existing) return;
+      const timeline = [...existing.timeline];
+      const statusTitle =
+        newStatus === 'resolved'
+          ? 'Issue Resolved via Batch Action'
+          : newStatus === 'in_progress'
+          ? 'Field Crew Dispatched (Batch)'
+          : newStatus === 'assigned'
+          ? 'Assigned via Batch Action'
+          : 'Status Set to Submitted';
+
+      timeline.push({
+        status: newStatus,
+        timestamp: now,
+        title: statusTitle,
+        description:
+          resolutionDetails ||
+          notes ||
+          `Status transitioned to ${newStatus.replace('_', ' ')} by administrator (${currentUser.name}).`,
+        actor: currentUser.name,
+        badgeType: 'admin',
+      });
+
+      complaintService.update(id, {
+        status: newStatus,
+        ...(newStatus === 'resolved'
+          ? {
+              resolvedAt: now,
+              resolvedBy: currentUser.name,
+              resolutionDetails: resolutionDetails || notes || 'Verified and resolved by municipal administration.',
+            }
+          : {}),
+        adminNotes: notes ? (existing.adminNotes ? `${existing.adminNotes} | ${notes}` : notes) : existing.adminNotes,
+        timeline,
+      });
+
+      notificationService.add({
+        userId: existing.citizenId,
+        title: `Status Update: ${id} is ${newStatus.replace('_', ' ').toUpperCase()}`,
+        message: notes || `Your complaint status has moved to ${newStatus.replace('_', ' ')}.`,
+        type: newStatus === 'resolved' ? 'resolved' : newStatus === 'in_progress' ? 'in_progress' : 'assigned',
+        link: `/track?id=${id}`,
+      });
+    });
+
+    const updatedAll = complaintService.getAll();
+    setAllComplaintsList(updatedAll);
+    setHotspotsList(hotspotService.detectClusters(updatedAll));
+
+    notificationService.add({
+      userId: 'admin',
+      title: `Batch Status Updated`,
+      message: `${ids.length} complaint${ids.length > 1 ? 's' : ''} moved to ${newStatus.replace('_', ' ')}.`,
+      type: 'admin_action',
+      link: '/admin/complaints',
+    });
+    refreshNotifications();
+  };
+
+  const bulkUpdatePriority = (
+    ids: string[],
+    priority: PriorityLevel,
+    notes?: string
+  ) => {
+    if (!ids || ids.length === 0) return;
+    const now = new Date().toISOString();
+
+    ids.forEach((id) => {
+      const existing = complaintService.getById(id);
+      if (!existing) return;
+      const timeline = [...existing.timeline];
+
+      timeline.push({
+        status: existing.status,
+        timestamp: now,
+        title: `Priority Adjusted to ${priority}`,
+        description: notes || `Batch priority modified to ${priority} by administrator (${currentUser.name}).`,
+        actor: currentUser.name,
+        badgeType: 'admin',
+      });
+
+      complaintService.update(id, {
+        priority,
+        finalPriority: priority,
+        adminNotes: notes ? (existing.adminNotes ? `${existing.adminNotes} | ${notes}` : notes) : existing.adminNotes,
+        timeline,
+      });
+    });
+
+    const updatedAll = complaintService.getAll();
+    setAllComplaintsList(updatedAll);
+    setHotspotsList(hotspotService.detectClusters(updatedAll));
+
+    notificationService.add({
+      userId: 'admin',
+      title: `Batch Priority Updated`,
+      message: `Priority set to ${priority} for ${ids.length} complaint${ids.length > 1 ? 's' : ''}.`,
+      type: 'admin_action',
+      link: '/admin/complaints',
+    });
+    refreshNotifications();
+  };
+
+  const bulkRatifyAIRecommendations = (ids: string[]) => {
+    if (!ids || ids.length === 0) return;
+    const now = new Date().toISOString();
+
+    ids.forEach((id) => {
+      const existing = complaintService.getById(id);
+      if (!existing) return;
+      const timeline = [...existing.timeline];
+
+      timeline.push({
+        status: 'assigned',
+        timestamp: now,
+        title: 'AI Recommendation Ratified in Bulk',
+        description: `Administrator (${currentUser.name}) batch-ratified AI recommendation: ${existing.aiDepartment}, ${existing.aiPriority} priority.`,
+        actor: currentUser.name,
+        badgeType: 'admin',
+      });
+
+      complaintService.update(id, {
+        status: 'assigned',
+        finalCategory: existing.aiCategory,
+        finalPriority: existing.aiPriority,
+        assignedDepartment: existing.aiDepartment,
+        priority: existing.aiPriority,
+        department: existing.aiDepartment,
+        reviewedBy: currentUser.name,
+        reviewedAt: now,
+        reviewDecision: 'ratified',
+        timeline,
+      });
+
+      notificationService.add({
+        userId: existing.citizenId,
+        title: `Work Order Assigned: ${id}`,
+        message: `Your complaint was reviewed and assigned to ${existing.aiDepartment}.`,
+        type: 'assigned',
+        link: `/track?id=${id}`,
+      });
+    });
+
+    const updatedAll = complaintService.getAll();
+    setAllComplaintsList(updatedAll);
+    setHotspotsList(hotspotService.detectClusters(updatedAll));
+
+    notificationService.add({
+      userId: 'admin',
+      title: `Batch AI Ratification Complete`,
+      message: `Ratified AI recommendations for ${ids.length} complaint${ids.length > 1 ? 's' : ''}.`,
+      type: 'admin_action',
+      link: '/admin/complaints',
+    });
+    refreshNotifications();
+  };
+
   // Hotspots Operations
   const recalculateHotspotsNow = () => {
     const updated = hotspotService.detectClusters(allComplaintsList);
@@ -706,6 +975,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         myComplaints,
         lastSubmittedComplaint,
         getComplaintById,
+        getComplaintForCitizen,
         searchDatabase,
         isCommandBarOpen,
         setIsCommandBarOpen,
@@ -719,6 +989,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateComplaintDetails,
         updateComplaint,
         resolveComplaint,
+        bulkAssignDepartment,
+        bulkUpdateStatus,
+        bulkUpdatePriority,
+        bulkRatifyAIRecommendations,
         hotspots: hotspotsList,
         recalculateHotspotsNow,
         aiInsights: insightsList,
@@ -727,9 +1001,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         dismissInsight,
         departments: departmentsList,
         currentUser,
+        role: auth.role,
+        isAuthenticated: auth.isAuthenticated,
         activePersona: currentUser.role,
         setActivePersona,
         loginAs,
+        login: loginAs,
         logout,
         isAuthModalOpen,
         setIsAuthModalOpen,

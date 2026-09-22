@@ -43,7 +43,7 @@ export interface AIAnalysis {
   category: ComplaintCategory;
   priority: PriorityLevel;
   department: DepartmentName;
-  confidence: number; // e.g. 0.94
+  confidence?: number; // e.g. 0.94
   confidencePercent?: number;
   reasoning: string;
   factors: string[];
@@ -53,6 +53,7 @@ export interface AIAnalysis {
   provider?: 'Gemini' | 'Demo AI';
   providerLabel?: string;
   timestamp?: string;
+  isHeuristicPreview?: boolean;
 }
 
 export interface Complaint {
@@ -73,19 +74,19 @@ export interface Complaint {
   aiProvider?: 'Gemini' | 'Demo AI';
   aiTimestamp?: string;
 
-  // Administrative Decision (Explicit Human-in-the-Loop review)
+  // Administrative Decision (Authoritative Human-in-the-Loop review)
   finalCategory?: ComplaintCategory;
   finalPriority?: PriorityLevel;
   assignedDepartment?: DepartmentName;
   reviewedBy?: string;
   reviewedAt?: string;
-  reviewDecision?: 'ratified' | 'overridden' | 'pending';
+  reviewDecision: 'ratified' | 'overridden' | 'pending';
 
   location: LocationCoordinates;
   image?: string;
   status: ComplaintStatus;
-  priority: PriorityLevel;
-  department: DepartmentName;
+  priority?: PriorityLevel;
+  department?: DepartmentName;
   assignedOfficer?: string;
   citizenName?: string;
   citizenPhone?: string;

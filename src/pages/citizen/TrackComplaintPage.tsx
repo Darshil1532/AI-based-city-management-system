@@ -22,9 +22,10 @@ import {
 
 export const TrackComplaintPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { getComplaintById, complaints } = useApp();
+  const { getComplaintForCitizen, getComplaintById, currentUser, complaints } = useApp();
 
-  const queryId = searchParams.get('id') || 'SC1024';
+  const isCitizen = currentUser.role === 'citizen';
+  const queryId = searchParams.get('id') || (complaints.length > 0 ? complaints[0].id : 'SC1024');
   const [inputId, setInputId] = useState(queryId);
   const [searchedId, setSearchedId] = useState(queryId);
 
@@ -43,7 +44,13 @@ export const TrackComplaintPage: React.FC = () => {
     setSearchParams({ id: formatted });
   };
 
-  const complaint = getComplaintById(searchedId);
+  // Enforce privacy: Citizen only retrieves complaint if owned by currentUser.id
+  const complaint = isCitizen
+    ? getComplaintForCitizen(searchedId, currentUser.id)
+    : getComplaintById(searchedId);
+
+  // Check if complaint exists in database but is restricted by citizen privacy
+  const isRestrictedByPrivacy = isCitizen && !complaint && Boolean(getComplaintById(searchedId));
 
   // Status timeline steps
   const steps: { key: ComplaintStatus; label: string; desc: string }[] = [
@@ -137,7 +144,8 @@ export const TrackComplaintPage: React.FC = () => {
                 </h2>
               </div>
               <div className="flex items-center gap-2">
-                <PriorityBadge priority={complaint.priority} size="sm" isAI={true} />
+                <PriorityBadge priority={complaint.aiPriority} size="sm" isAI={true} />
+                <PriorityBadge priority={complaint.finalPriority || (complaint.reviewDecision === 'pending' ? 'Pending Review' : complaint.priority)} size="sm" />
                 <StatusBadge status={complaint.status} size="sm" />
               </div>
             </div>
@@ -258,14 +266,14 @@ export const TrackComplaintPage: React.FC = () => {
                   <div className="bg-indigo-50/60 p-2.5 rounded-lg border border-indigo-100/70">
                     <span className="text-indigo-600 block text-[10px] font-mono uppercase font-bold">2. AI Priority:</span>
                     <span className="font-bold text-indigo-950 text-xs mt-0.5 block">
-                      {complaint.aiPriority || complaint.priority}
+                      {complaint.aiPriority}
                       {complaint.aiConfidence ? ` (${Math.round(complaint.aiConfidence * 100)}%)` : ''}
                     </span>
                   </div>
                   <div className="bg-amber-50/60 p-2.5 rounded-lg border border-amber-100/70">
                     <span className="text-amber-700 block text-[10px] font-mono uppercase font-bold">3. Admin Final:</span>
                     <span className="font-bold text-slate-900 text-xs mt-0.5 block">
-                      {complaint.finalPriority || (complaint.status === 'submitted' ? 'Pending Triage' : complaint.priority)}
+                      {complaint.finalPriority || (complaint.reviewDecision === 'pending' ? 'Pending Review' : (complaint.priority || 'Unassigned'))}
                     </span>
                   </div>
                 </div>
@@ -274,7 +282,7 @@ export const TrackComplaintPage: React.FC = () => {
                   <span className="text-slate-400 block text-[11px] font-mono">Assigned Agency:</span>
                   <div className="flex items-center gap-1.5 font-bold text-slate-900 mt-1">
                     <Building2 className="w-3.5 h-3.5 text-slate-700" />
-                    <span>{complaint.department}</span>
+                    <span>{complaint.assignedDepartment || complaint.department || (complaint.reviewDecision === 'pending' ? 'Pending Human Assignment' : 'Unassigned')}</span>
                   </div>
                   {complaint.assignedOfficer && (
                     <span className="text-[11px] text-slate-500 block mt-0.5 font-mono">
@@ -340,6 +348,21 @@ export const TrackComplaintPage: React.FC = () => {
           {/* AI Governance Advisory */}
           <AIDecisionDisclaimer />
         </div>
+      ) : isRestrictedByPrivacy ? (
+        <div className="bg-amber-50/90 border border-amber-200/90 rounded-2xl p-8 text-center space-y-3.5 shadow-2xs max-w-xl mx-auto">
+          <div className="w-12 h-12 bg-amber-100/90 text-amber-800 rounded-full flex items-center justify-center mx-auto border border-amber-300/80">
+            <ShieldAlert className="w-6 h-6" />
+          </div>
+          <h2 className="text-base font-bold text-amber-950">
+            Access Restricted: Citizen Privacy Protection
+          </h2>
+          <p className="text-xs text-amber-900 leading-relaxed">
+            Incident docket <strong>"{searchedId}"</strong> is registered under a different citizen account. To safeguard citizen privacy and data security, citizens may only view complaints registered under their own profile.
+          </p>
+          <div className="pt-2 text-[11px] text-amber-800 font-mono bg-white/70 py-1.5 px-3 rounded-lg border border-amber-200/60 inline-block">
+            Active Citizen Profile: <strong>{currentUser.name}</strong> ({currentUser.id})
+          </div>
+        </div>
       ) : (
         <div className="bg-white rounded-xl border border-slate-200/80 p-8 text-center space-y-3 shadow-2xs">
           <AlertCircle className="w-8 h-8 text-amber-500 mx-auto" />
@@ -347,7 +370,7 @@ export const TrackComplaintPage: React.FC = () => {
             No Incident Record Found for "{searchedId}"
           </h2>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Please check the complaint ID for typos or select one of the available test records above.
+            Please check the complaint ID for typos or select one of your registered complaints above.
           </p>
         </div>
       )}

@@ -3,7 +3,7 @@ import { PriorityLevel } from '../../types';
 import { AlertTriangle, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 
 interface PriorityBadgeProps {
-  priority: PriorityLevel;
+  priority?: PriorityLevel | string;
   size?: 'sm' | 'md' | 'lg';
   isAI?: boolean;
 }
@@ -19,7 +19,9 @@ export const PriorityBadge: React.FC<PriorityBadgeProps> = ({
     lg: 'text-sm font-semibold px-3 py-1.5 gap-2',
   };
 
-  const config = {
+  const normalizedKey = (priority && ['High', 'Medium', 'Low'].includes(priority) ? priority : 'Pending') as 'High' | 'Medium' | 'Low' | 'Pending';
+
+  const configs: Record<'High' | 'Medium' | 'Low' | 'Pending', { label: string; classes: string; dotClass: string; icon: any }> = {
     High: {
       label: 'High',
       classes: 'bg-rose-50 text-rose-800 border border-rose-200/80',
@@ -38,12 +40,15 @@ export const PriorityBadge: React.FC<PriorityBadgeProps> = ({
       dotClass: 'bg-slate-400',
       icon: ArrowDownRight,
     },
-  }[priority] || {
-    label: priority,
-    classes: 'bg-slate-100 text-slate-700 border border-slate-200',
-    dotClass: 'bg-slate-400',
-    icon: Minus,
+    Pending: {
+      label: priority || 'Pending Review',
+      classes: 'bg-amber-50/80 text-amber-800 border border-amber-300/70',
+      dotClass: 'bg-amber-400',
+      icon: Minus,
+    },
   };
+
+  const config = configs[normalizedKey] || configs.Pending;
 
   const Icon = config.icon;
 

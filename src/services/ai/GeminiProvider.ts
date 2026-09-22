@@ -9,7 +9,7 @@ import { DemoAIProvider } from './DemoAIProvider';
 
 export class GeminiProvider implements IAIProvider {
   name: 'Gemini' = 'Gemini';
-  label: string = 'Gemini 3.8 Flash';
+  label: string = 'Gemini 2.5 Flash';
   private fallbackProvider: DemoAIProvider = new DemoAIProvider();
 
   async isAvailable(): Promise<boolean> {

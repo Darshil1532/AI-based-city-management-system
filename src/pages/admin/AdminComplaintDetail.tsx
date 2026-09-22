@@ -67,13 +67,13 @@ export const AdminComplaintDetail: React.FC = () => {
 
   // Editable administrator state
   const [selectedCategory, setSelectedCategory] = useState<ComplaintCategory>(
-    complaint?.category || 'Pothole / Road'
+    complaint?.finalCategory || complaint?.aiCategory || complaint?.category || 'Pothole / Road'
   );
   const [selectedPriority, setSelectedPriority] = useState<PriorityLevel>(
-    complaint?.priority || 'High'
+    complaint?.finalPriority || complaint?.aiPriority || complaint?.priority || 'High'
   );
   const [selectedDepartment, setSelectedDepartment] = useState<DepartmentName>(
-    complaint?.department || 'Public Works Department'
+    complaint?.assignedDepartment || complaint?.aiDepartment || complaint?.department || 'Public Works Department'
   );
   const [selectedStatus, setSelectedStatus] = useState<ComplaintStatus>(
     complaint?.status || 'submitted'
@@ -92,16 +92,16 @@ export const AdminComplaintDetail: React.FC = () => {
   // Sync state whenever complaint updates in AppContext
   useEffect(() => {
     if (complaint) {
-      setSelectedCategory(complaint.category);
-      setSelectedPriority(complaint.priority);
-      setSelectedDepartment(complaint.department);
+      setSelectedCategory(complaint.finalCategory || complaint.aiCategory || complaint.category);
+      setSelectedPriority(complaint.finalPriority || complaint.aiPriority || complaint.priority || 'High');
+      setSelectedDepartment(complaint.assignedDepartment || complaint.aiDepartment || complaint.department || 'Public Works Department');
       setSelectedStatus(complaint.status);
       setAdminNotes(complaint.adminNotes || '');
       setAssignedOfficer(complaint.assignedOfficer || 'Inspector J. Martinez (Unit 4)');
       setEstimatedResolutionTime(complaint.estimatedResolutionTime || '24-48 Hours');
       setResolutionDetails(complaint.resolutionDetails || '');
     }
-  }, [complaint?.status, complaint?.priority, complaint?.department, complaint?.category, complaint?.updatedAt, complaint?.resolutionDetails]);
+  }, [complaint?.status, complaint?.finalPriority, complaint?.priority, complaint?.assignedDepartment, complaint?.department, complaint?.finalCategory, complaint?.category, complaint?.updatedAt, complaint?.resolutionDetails]);
 
   const [isSaved, setIsSaved] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
@@ -133,6 +133,9 @@ export const AdminComplaintDetail: React.FC = () => {
     e.preventDefault();
 
     updateComplaint(complaint.id, {
+      finalCategory: selectedCategory,
+      finalPriority: selectedPriority,
+      assignedDepartment: selectedDepartment,
       category: selectedCategory,
       priority: selectedPriority,
       department: selectedDepartment,
@@ -141,10 +144,13 @@ export const AdminComplaintDetail: React.FC = () => {
       assignedOfficer,
       estimatedResolutionTime,
       resolutionDetails: selectedStatus === 'resolved' ? resolutionDetails : complaint.resolutionDetails,
+      reviewedBy: 'Demo Administrator',
+      reviewedAt: new Date().toISOString(),
+      reviewDecision: hasOverrides ? 'overridden' : 'ratified',
     });
 
     setIsSaved(true);
-    setSaveMessage('Administrative validation and updates saved successfully.');
+    setSaveMessage('Administrative validation and authoritative updates saved successfully.');
     setTimeout(() => setIsSaved(false), 3000);
   };
 
@@ -239,12 +245,13 @@ export const AdminComplaintDetail: React.FC = () => {
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-mono text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
                 {complaint.id}
               </span>
               <StatusBadge status={complaint.status} size="sm" />
-              <PriorityBadge priority={complaint.priority} size="sm" isAI={true} />
+              <PriorityBadge priority={complaint.aiPriority} size="sm" isAI={true} />
+              <PriorityBadge priority={complaint.finalPriority || (complaint.reviewDecision === 'pending' ? 'Pending Review' : complaint.priority)} size="sm" />
               {complaint.reviewDecision && (
                 <span
                   className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded border ${
@@ -252,7 +259,7 @@ export const AdminComplaintDetail: React.FC = () => {
                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                       : complaint.reviewDecision === 'overridden'
                       ? 'bg-amber-50 text-amber-700 border-amber-200'
-                      : 'bg-slate-50 text-slate-600 border-slate-200'
+                      : 'bg-amber-50 text-amber-700 border-amber-300'
                   }`}
                 >
                   Decision: {complaint.reviewDecision}

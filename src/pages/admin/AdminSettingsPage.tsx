@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 
 export const AdminSettingsPage: React.FC = () => {
-  const { complaints, hotspots, aiInsights, activePersona, resetData } = useApp();
+  const { complaints, hotspots, aiInsights, activePersona, resetData, aiProviderType } = useApp();
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
   const [confidenceThreshold, setConfidenceThreshold] = useState(80);
@@ -135,11 +135,13 @@ export const AdminSettingsPage: React.FC = () => {
                 Decision Support
               </span>
             </div>
-            <p className="text-xs text-slate-700 font-semibold">
-              Client-Side NLP & Triage Heuristic Engine
+            <p className="text-xs text-slate-900 font-bold font-mono">
+              AI Provider: {aiProviderType === 'Gemini' ? 'Gemini 2.5 Flash' : 'Demo AI'}
             </p>
             <p className="text-[11px] text-slate-500 leading-relaxed">
-              Analyzes complaint text, urgency keywords, category, and sentiment to recommend priority and department assignment. All actions require human administrator ratification.
+              {aiProviderType === 'Gemini'
+                ? 'Gemini 2.5 Flash cloud inference for natural language understanding and priority dispatch recommendations. All actions require human administrator ratification.'
+                : 'Local rule-based municipal expert system for offline triage and keyword categorization. All actions require human administrator ratification.'}
             </p>
           </div>
 

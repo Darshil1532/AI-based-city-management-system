@@ -1,7 +1,6 @@
 import { AIInsight, Complaint } from '../../types';
-import { INITIAL_AI_INSIGHTS } from '../../data/mockData';
-
-const STORAGE_KEY = 'smartcity_insights_v2';
+import { IInsightRepository } from '../../repositories/types';
+import { repositories } from '../../repositories';
 
 export interface IInsightService {
   getAll(): AIInsight[];
@@ -13,67 +12,54 @@ export interface IInsightService {
 }
 
 export class InsightService implements IInsightService {
+  private repository: IInsightRepository;
   private insights: AIInsight[] = [];
 
-  constructor() {
-    this.load();
+  constructor(repository: IInsightRepository = repositories.insights) {
+    this.repository = repository;
+    this.insights = this.repository.getAll();
   }
 
-  private load(): void {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        this.insights = JSON.parse(saved);
-        return;
-      }
-    } catch (e) {
-      console.warn('[InsightService] Could not read from localStorage:', e);
-    }
-    this.insights = [...INITIAL_AI_INSIGHTS];
-    this.persist();
-  }
-
-  private persist(): void {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.insights));
-    } catch (e) {
-      console.warn('[InsightService] Could not write to localStorage:', e);
-    }
+  private refreshFromRepository(): void {
+    this.insights = this.repository.getAll();
   }
 
   getAll(): AIInsight[] {
+    this.refreshFromRepository();
     return [...this.insights];
   }
 
   getById(id: string): AIInsight | undefined {
-    return this.insights.find((i) => i.id === id);
+    return this.repository.getById(id);
   }
 
   updateStatus(
     id: string,
     status: 'new' | 'reviewed' | 'action_taken' | 'dismissed'
   ): void {
-    this.insights = this.insights.map((i) => (i.id === id ? { ...i, status } : i));
-    this.persist();
+    this.refreshFromRepository();
+    const updated = this.insights.map((i) => (i.id === id ? { ...i, status } : i));
+    this.repository.saveAll(updated);
+    this.insights = updated;
   }
 
   saveAll(insights: AIInsight[]): void {
-    this.insights = [...insights];
-    this.persist();
+    this.repository.saveAll(insights);
+    this.refreshFromRepository();
   }
 
   reset(): AIInsight[] {
-    this.insights = [...INITIAL_AI_INSIGHTS];
-    this.persist();
-    return [...this.insights];
+    const list = this.repository.reset();
+    this.insights = [...list];
+    return list;
   }
 
   generateFromComplaints(complaints: Complaint[]): AIInsight[] {
-    // Detect patterns from active complaints
+    this.refreshFromRepository();
     const active = complaints.filter((c) => c.status !== 'resolved');
     const newInsights: AIInsight[] = [...this.insights];
 
-    // Example: Check if 3+ high-severity complaints exist in same category
+    // Check if 3+ high-severity complaints exist in same category
     const categoryGroups: Record<string, Complaint[]> = {};
     active.forEach((c) => {
       categoryGroups[c.category] = categoryGroups[c.category] || [];
@@ -86,14 +72,15 @@ export class InsightService implements IInsightService {
         const alreadyExists = newInsights.some((i) => i.id === id);
         if (!alreadyExists) {
           const sample = list[0];
+          const targetDept = sample.assignedDepartment || sample.department || 'Public Works Department';
           newInsights.unshift({
             id,
             title: `Systemic ${cat} Recurrence Pattern Detected`,
             detectedPattern: `${list.length} unresolved incidents reported in ${cat}. High concentration indicates systemic civic asset maintenance requirement.`,
-            recommendation: `Conduct coordinated field inspection by ${sample.department} and prioritize planned maintenance over emergency ad-hoc repairs.`,
+            recommendation: `Conduct coordinated field inspection by ${targetDept} and prioritize planned maintenance over emergency ad-hoc repairs.`,
             location: sample.location.address || 'Urban Municipal Sector',
             priority: 'High',
-            suggestedDepartment: sample.department,
+            suggestedDepartment: targetDept,
             relatedComplaintIds: list.map((c) => c.id).slice(0, 5),
             relatedComplaintsCount: list.length,
             status: 'new',
@@ -105,8 +92,8 @@ export class InsightService implements IInsightService {
       }
     });
 
+    this.repository.saveAll(newInsights);
     this.insights = newInsights;
-    this.persist();
     return this.insights;
   }
 }

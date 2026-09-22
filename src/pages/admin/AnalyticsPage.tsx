@@ -65,7 +65,10 @@ export const AnalyticsPage: React.FC = () => {
   const priorityData = useMemo(() => {
     const counts = { High: 0, Medium: 0, Low: 0 };
     complaints.forEach((c) => {
-      counts[c.priority]++;
+      const pri = (c.finalPriority || c.aiPriority || c.priority || 'Low') as 'High' | 'Medium' | 'Low';
+      if (counts[pri] !== undefined) {
+        counts[pri]++;
+      }
     });
     return [
       { name: 'High Priority', value: counts.High, color: '#ef4444' },

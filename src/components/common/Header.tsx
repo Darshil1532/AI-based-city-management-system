@@ -185,12 +185,15 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center gap-2 sm:gap-3">
             {/* AI Provider Indicator Badge */}
             <div
+              id="header-ai-provider-badge"
               className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100/90 border border-slate-200/80 text-[11px] font-mono text-slate-700"
-              title={`Active AI Provider: ${aiProviderLabel}`}
+              title={`Decision-Support AI Provider: ${aiProviderType === 'Gemini' ? 'Gemini 2.5 Flash' : 'Demo AI'}`}
             >
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-              <span className="font-semibold">AI:</span>
-              <span className="text-slate-900">{aiProviderType}</span>
+              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+              <span className="text-slate-500 font-medium">AI Provider:</span>
+              <span className="text-slate-900 font-semibold">
+                {aiProviderType === 'Gemini' ? 'Gemini 2.5 Flash' : 'Demo AI'}
+              </span>
             </div>
 
             {/* Direct Segmented Role Switcher (Minimalist & Aesthetic) */}

@@ -5,6 +5,7 @@ import { StatusBadge } from '../../components/common/StatusBadge';
 import { PriorityBadge } from '../../components/common/PriorityBadge';
 import { AIDecisionDisclaimer } from '../../components/common/AIDecisionDisclaimer';
 import { DashboardCommandBar } from '../../components/admin/DashboardCommandBar';
+import { BulkActionsBar } from '../../components/admin/BulkActionsBar';
 import {
   Complaint,
   ComplaintCategory,
@@ -53,32 +54,39 @@ export const AdminDashboard: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
   // KPIs
   const total = complaints.length;
   const pending = complaints.filter((c) => c.status === 'submitted').length;
   const inProgress = complaints.filter((c) => c.status === 'in_progress' || c.status === 'assigned').length;
   const resolved = complaints.filter((c) => c.status === 'resolved').length;
-  const highPriority = complaints.filter((c) => c.priority === 'High' && c.status !== 'resolved').length;
+  const highPriority = complaints.filter((c) => (c.finalPriority || c.aiPriority || c.priority) === 'High' && c.status !== 'resolved').length;
 
   // Filtered complaints
   const filteredComplaints = useMemo(() => {
     return complaints.filter((c) => {
       const q = searchQuery.toLowerCase();
+      const currentCategory = c.finalCategory || c.category;
+      const currentPriority = c.finalPriority || c.aiPriority || c.priority;
+      const currentDepartment = c.assignedDepartment || c.department;
+
       const matchesQuery =
         !q ||
         c.id.toLowerCase().includes(q) ||
         c.title.toLowerCase().includes(q) ||
         c.description.toLowerCase().includes(q) ||
-        (c.category && c.category.toLowerCase().includes(q)) ||
-        (c.department && c.department.toLowerCase().includes(q)) ||
+        (currentCategory && currentCategory.toLowerCase().includes(q)) ||
+        (currentDepartment && currentDepartment.toLowerCase().includes(q)) ||
         c.location.address.toLowerCase().includes(q) ||
         (c.location.landmark && c.location.landmark.toLowerCase().includes(q)) ||
         (c.citizenName && c.citizenName.toLowerCase().includes(q));
 
-      const matchesCat = categoryFilter === 'all' || c.category === categoryFilter;
-      const matchesPri = priorityFilter === 'all' || c.priority === priorityFilter;
+      const matchesCat = categoryFilter === 'all' || currentCategory === categoryFilter;
+      const matchesPri = priorityFilter === 'all' || currentPriority === priorityFilter;
       const matchesSta = statusFilter === 'all' || c.status === statusFilter;
-      const matchesDept = departmentFilter === 'all' || c.department === departmentFilter;
+      const matchesDept = departmentFilter === 'all' || currentDepartment === departmentFilter;
 
       let matchesDate = true;
       if (dateFilter === 'today') {
@@ -102,10 +110,12 @@ export const AdminDashboard: React.FC = () => {
           : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       }
       if (sortField === 'priority') {
-        const score = { High: 3, Medium: 2, Low: 1 };
+        const score: Record<string, number> = { High: 3, Medium: 2, Low: 1 };
+        const priA = a.finalPriority || a.priority || 'Low';
+        const priB = b.finalPriority || b.priority || 'Low';
         return sortOrder === 'desc'
-          ? score[b.priority] - score[a.priority]
-          : score[a.priority] - score[b.priority];
+          ? (score[priB] || 0) - (score[priA] || 0)
+          : (score[priA] || 0) - (score[priB] || 0);
       }
       if (sortField === 'id') {
         return sortOrder === 'desc' ? b.id.localeCompare(a.id) : a.id.localeCompare(b.id);
@@ -128,6 +138,29 @@ export const AdminDashboard: React.FC = () => {
       setSortField(field);
       setSortOrder('desc');
     }
+  };
+
+  // Bulk action selection calculations & handlers
+  const isPageAllSelected =
+    paginatedComplaints.length > 0 &&
+    paginatedComplaints.every((c) => selectedIds.includes(c.id));
+  const isPagePartiallySelected =
+    selectedIds.length > 0 && !isPageAllSelected;
+
+  const handleToggleSelectPage = () => {
+    if (isPageAllSelected) {
+      const pageIds = new Set(paginatedComplaints.map((c) => c.id));
+      setSelectedIds((prev) => prev.filter((id) => !pageIds.has(id)));
+    } else {
+      const pageIds = paginatedComplaints.map((c) => c.id);
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...pageIds])));
+    }
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
   };
 
   return (
@@ -439,6 +472,18 @@ export const AdminDashboard: React.FC = () => {
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-50/70 border-b border-slate-200/80 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
+                <th className="py-3 px-3 w-10 text-center">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all incidents on page"
+                    checked={isPageAllSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = isPagePartiallySelected;
+                    }}
+                    onChange={handleToggleSelectPage}
+                    className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"
+                  />
+                </th>
                 <th
                   onClick={() => toggleSort('id')}
                   className="py-3 px-4 cursor-pointer hover:text-slate-900"
@@ -477,88 +522,118 @@ export const AdminDashboard: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {paginatedComplaints.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-slate-400">
+                  <td colSpan={10} className="py-12 text-center text-slate-400">
                     No complaints match the specified filters.
                   </td>
                 </tr>
               ) : (
-                paginatedComplaints.map((c) => (
-                  <tr
-                    key={c.id}
-                    onClick={() => navigate(`/admin/complaint/${c.id}`)}
-                    className="hover:bg-slate-50/90 cursor-pointer transition-colors group"
-                  >
-                    {/* ID */}
-                    <td className="py-3.5 px-4 font-mono font-bold text-slate-900 whitespace-nowrap">
-                      <span className="bg-slate-100 border border-slate-200 px-2 py-0.5 rounded text-[11px] group-hover:bg-blue-50 group-hover:text-blue-700 group-hover:border-blue-200 transition-colors">
-                        {c.id}
-                      </span>
-                    </td>
-
-                    {/* Description */}
-                    <td className="py-3.5 px-4 max-w-xs">
-                      <span className="font-semibold text-slate-900 line-clamp-1 group-hover:text-blue-600 transition-colors">
-                        {c.title}
-                      </span>
-                      <span className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
-                        {c.description}
-                      </span>
-                    </td>
-
-                    {/* Category */}
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span className="font-medium text-slate-600 bg-slate-100/90 px-2 py-0.5 rounded-md text-[11px] border border-slate-200/60">
-                        {c.category}
-                      </span>
-                    </td>
-
-                    {/* Priority */}
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <PriorityBadge priority={c.priority} size="sm" isAI={true} />
-                    </td>
-
-                    {/* Location */}
-                    <td className="py-3.5 px-4 max-w-[180px]">
-                      <span className="font-medium text-slate-800 line-clamp-1 text-[11px]">
-                        {c.location.landmark || c.location.address}
-                      </span>
-                      <span className="text-[10px] text-slate-400 truncate block mt-0.5">
-                        {c.location.district || c.location.address}
-                      </span>
-                    </td>
-
-                    {/* Department */}
-                    <td className="py-3.5 px-4 max-w-[180px]">
-                      <span className="font-medium text-slate-700 line-clamp-1 text-[11px]">
-                        {c.department}
-                      </span>
-                    </td>
-
-                    {/* Status */}
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <StatusBadge status={c.status} size="sm" />
-                    </td>
-
-                    {/* Date */}
-                    <td className="py-3.5 px-4 text-slate-400 whitespace-nowrap text-[11px] font-mono">
-                      {new Date(c.createdAt).toLocaleDateString()}
-                    </td>
-
-                    {/* Actions */}
-                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/admin/complaint/${c.id}`);
-                        }}
-                        className="px-3 py-1 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-900 hover:text-white border border-slate-200 transition-all shadow-2xs cursor-pointer"
+                paginatedComplaints.map((c) => {
+                  const isSelected = selectedIds.includes(c.id);
+                  return (
+                    <tr
+                      key={c.id}
+                      onClick={() => navigate(`/admin/complaint/${c.id}`)}
+                      className={`cursor-pointer transition-colors group ${
+                        isSelected
+                          ? 'bg-blue-50/70 hover:bg-blue-50/90'
+                          : 'hover:bg-slate-50/90'
+                      }`}
+                    >
+                      {/* Checkbox */}
+                      <td
+                        className="py-3.5 px-3 text-center whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        Review
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                        <input
+                          type="checkbox"
+                          aria-label={`Select incident ${c.id}`}
+                          checked={isSelected}
+                          onChange={() => handleToggleSelect(c.id)}
+                          className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"
+                        />
+                      </td>
+
+                      {/* ID */}
+                      <td className="py-3.5 px-4 font-mono font-bold text-slate-900 whitespace-nowrap">
+                        <span className={`px-2 py-0.5 rounded text-[11px] transition-colors border ${
+                          isSelected
+                            ? 'bg-blue-100 text-blue-800 border-blue-300 font-semibold'
+                            : 'bg-slate-100 border-slate-200 group-hover:bg-blue-50 group-hover:text-blue-700 group-hover:border-blue-200'
+                        }`}>
+                          {c.id}
+                        </span>
+                      </td>
+
+                      {/* Description */}
+                      <td className="py-3.5 px-4 max-w-xs">
+                        <span className="font-semibold text-slate-900 line-clamp-1 group-hover:text-blue-600 transition-colors">
+                          {c.title}
+                        </span>
+                        <span className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                          {c.description}
+                        </span>
+                      </td>
+
+                      {/* Category */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="font-medium text-slate-600 bg-slate-100/90 px-2 py-0.5 rounded-md text-[11px] border border-slate-200/60">
+                          {c.finalCategory || c.category}
+                        </span>
+                      </td>
+
+                      {/* Priority */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <PriorityBadge priority={c.finalPriority || (c.reviewDecision === 'pending' ? undefined : c.priority)} size="sm" />
+                        {c.aiPriority && (
+                          <div className="mt-1">
+                            <PriorityBadge priority={c.aiPriority} size="sm" isAI={true} />
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Location */}
+                      <td className="py-3.5 px-4 max-w-[180px]">
+                        <span className="font-medium text-slate-800 line-clamp-1 text-[11px]">
+                          {c.location.landmark || c.location.address}
+                        </span>
+                        <span className="text-[10px] text-slate-400 truncate block mt-0.5">
+                          {c.location.district || c.location.address}
+                        </span>
+                      </td>
+
+                      {/* Department */}
+                      <td className="py-3.5 px-4 max-w-[180px]">
+                        <span className="font-medium text-slate-700 line-clamp-1 text-[11px]">
+                          {c.assignedDepartment || c.department || 'Unassigned'}
+                        </span>
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <StatusBadge status={c.status} size="sm" />
+                      </td>
+
+                      {/* Date */}
+                      <td className="py-3.5 px-4 text-slate-400 whitespace-nowrap text-[11px] font-mono">
+                        {new Date(c.createdAt).toLocaleDateString()}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/admin/complaint/${c.id}`);
+                          }}
+                          className="px-3 py-1 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-900 hover:text-white border border-slate-200 transition-all shadow-2xs cursor-pointer"
+                        >
+                          Review
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -596,6 +671,15 @@ export const AdminDashboard: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Floating Bulk Actions Bar */}
+      <BulkActionsBar
+        selectedIds={selectedIds}
+        allComplaints={complaints}
+        totalVisibleCount={paginatedComplaints.length}
+        onSelectAllVisible={handleToggleSelectPage}
+        onClearSelection={() => setSelectedIds([])}
+      />
     </div>
   );
 };

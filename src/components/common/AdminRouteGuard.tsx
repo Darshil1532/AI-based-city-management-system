@@ -1,5 +1,19 @@
+/**
+ * Demo authentication for prototype.
+ * 
+ * SECURITY ARCHITECTURE WARNING:
+ * Client-side AdminRouteGuard is NOT sufficient for production.
+ * It provides client-side navigation routing and UI deterrence for hackathon demonstrations.
+ * In a production architecture, every API endpoint and mutation must strictly verify:
+ * 1. Authentication (valid cryptographically signed session token or JWT)
+ * 2. Role (enforcing RBAC on the server or via database Row Level Security)
+ * 3. Resource Ownership (ensuring citizens can only read and mutate their own complaints)
+ * 
+ * Do NOT claim production-grade security for this client-side route guard.
+ */
+
 import React from 'react';
-import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import { ShieldAlert, LogIn, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -8,10 +22,10 @@ interface AdminRouteGuardProps {
 }
 
 export const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({ children }) => {
-  const { currentUser, loginAs } = useApp();
+  const { currentUser, role, login } = useAuth();
   const navigate = useNavigate();
 
-  if (currentUser.role !== 'admin') {
+  if (role !== 'admin') {
     return (
       <div className="max-w-2xl mx-auto my-12 bg-white rounded-2xl border border-rose-200 shadow-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         <div className="bg-rose-50 border-b border-rose-100 px-6 py-5 flex items-center gap-3">
@@ -23,7 +37,7 @@ export const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({ children }) =>
               Access Denied • Administrator Clearance Required
             </h2>
             <p className="text-xs text-rose-700 font-medium">
-              Role-Based Access Control (RBAC) Enforcement
+              Demo Authentication & Client-Side Route Guarding
             </p>
           </div>
         </div>
@@ -37,15 +51,18 @@ export const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({ children }) =>
           </p>
 
           <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 text-xs space-y-1 font-mono text-slate-600">
-            <div><strong>Required Role:</strong> admin</div>
-            <div><strong>Your Current Role:</strong> {currentUser.role}</div>
-            <div><strong>Active Account ID:</strong> {currentUser.id}</div>
+            <div><strong>Required Clearance:</strong> admin</div>
+            <div><strong>Your Active Role:</strong> {role}</div>
+            <div><strong>Session Profile ID:</strong> {currentUser.id}</div>
+            <div className="text-[11px] text-amber-700 pt-1 border-t border-slate-200 mt-2">
+              ⚠️ <em>Prototype Note: Client-side route guard. Production endpoints enforce server-side authentication & ownership.</em>
+            </div>
           </div>
 
           <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
             <button
               type="button"
-              onClick={() => loginAs('admin')}
+              onClick={() => login('admin')}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold shadow-sm transition-all cursor-pointer"
             >
               <LogIn className="w-4 h-4" />

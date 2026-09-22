@@ -1,7 +1,6 @@
 import { Complaint, Hotspot, ComplaintCategory } from '../../types';
-import { INITIAL_HOTSPOTS } from '../../data/mockData';
-
-const STORAGE_KEY = 'smartcity_hotspots_v2';
+import { IHotspotRepository } from '../../repositories/types';
+import { repositories } from '../../repositories';
 
 export interface IHotspotService {
   getAll(): Hotspot[];
@@ -13,55 +12,41 @@ export interface IHotspotService {
 }
 
 export class HotspotService implements IHotspotService {
+  private repository: IHotspotRepository;
   private hotspots: Hotspot[] = [];
 
-  constructor() {
-    this.load();
+  constructor(repository: IHotspotRepository = repositories.hotspots) {
+    this.repository = repository;
+    this.hotspots = this.repository.getAll();
   }
 
-  private load(): void {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        this.hotspots = JSON.parse(saved);
-        return;
-      }
-    } catch (e) {
-      console.warn('[HotspotService] Could not read from localStorage:', e);
-    }
-    this.hotspots = [...INITIAL_HOTSPOTS];
-    this.persist();
-  }
-
-  private persist(): void {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.hotspots));
-    } catch (e) {
-      console.warn('[HotspotService] Could not write to localStorage:', e);
-    }
+  private refreshFromRepository(): void {
+    this.hotspots = this.repository.getAll();
   }
 
   getAll(): Hotspot[] {
+    this.refreshFromRepository();
     return [...this.hotspots];
   }
 
   getActive(): Hotspot[] {
+    this.refreshFromRepository();
     return this.hotspots.filter((h) => h.status === 'active');
   }
 
   getById(id: string): Hotspot | undefined {
-    return this.hotspots.find((h) => h.id === id);
+    return this.repository.getById(id);
   }
 
   saveAll(hotspots: Hotspot[]): void {
-    this.hotspots = [...hotspots];
-    this.persist();
+    this.repository.saveAll(hotspots);
+    this.refreshFromRepository();
   }
 
   reset(): Hotspot[] {
-    this.hotspots = [...INITIAL_HOTSPOTS];
-    this.persist();
-    return [...this.hotspots];
+    const list = this.repository.reset();
+    this.hotspots = [...list];
+    return list;
   }
 
   /**
@@ -251,8 +236,8 @@ export class HotspotService implements IHotspotService {
 
     // If clusters discovered, combine with initial curated hotspots (avoiding duplicates)
     if (detectedHotspots.length > 0) {
-      this.hotspots = detectedHotspots;
-      this.persist();
+      this.repository.saveAll(detectedHotspots);
+      this.refreshFromRepository();
       return detectedHotspots;
     }
 

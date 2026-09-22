@@ -21,11 +21,16 @@ import {
 export const ComplaintConfirmationPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getComplaintById, loginAs } = useApp();
+  const { getComplaintForCitizen, getComplaintById, currentUser, loginAs } = useApp();
 
   const [copied, setCopied] = useState(false);
 
-  const complaint = id ? getComplaintById(id) : undefined;
+  const isCitizen = currentUser.role === 'citizen';
+  const complaint = id
+    ? (isCitizen ? getComplaintForCitizen(id, currentUser.id) : getComplaintById(id))
+    : undefined;
+
+  const isRestrictedByPrivacy = Boolean(id && isCitizen && !complaint && getComplaintById(id));
 
   const handleCopyId = () => {
     if (!complaint) return;
@@ -33,6 +38,35 @@ export const ComplaintConfirmationPage: React.FC = () => {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  if (isRestrictedByPrivacy) {
+    return (
+      <div className="max-w-xl mx-auto py-16 px-4">
+        <div className="bg-amber-50/90 border border-amber-200/90 rounded-2xl p-8 text-center space-y-3.5 shadow-2xs">
+          <div className="w-12 h-12 bg-amber-100 text-amber-800 rounded-full flex items-center justify-center mx-auto border border-amber-300">
+            <Shield className="w-6 h-6" />
+          </div>
+          <h2 className="text-base font-bold text-amber-950">
+            Access Restricted: Citizen Privacy Protection
+          </h2>
+          <p className="text-xs text-amber-900 leading-relaxed">
+            Incident docket <strong>"{id}"</strong> is registered under a different citizen account. To safeguard citizen privacy and data security, citizens may only view complaints registered under their own profile.
+          </p>
+          <div className="pt-2 text-[11px] text-amber-800 font-mono bg-white/80 py-1.5 px-3 rounded-lg border border-amber-200 inline-block">
+            Active Citizen Profile: <strong>{currentUser.name}</strong> ({currentUser.id})
+          </div>
+          <div className="pt-2">
+            <Link
+              to="/citizen/dashboard"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded-lg hover:bg-slate-800"
+            >
+              Return to Citizen Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!complaint) {
     return (

@@ -403,6 +403,11 @@ export const INITIAL_COMPLAINTS: Complaint[] = [
     aiTimestamp: '2026-09-18T18:00:10Z',
     // Pending admin decision - demonstrates Human-in-the-Loop separation!
     reviewDecision: 'pending',
+    finalCategory: undefined,
+    finalPriority: undefined,
+    assignedDepartment: undefined,
+    reviewedBy: undefined,
+    reviewedAt: undefined,
     location: {
       latitude: 23.242,
       longitude: 77.415,
@@ -413,8 +418,8 @@ export const INITIAL_COMPLAINTS: Complaint[] = [
     image:
       'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=800&q=80',
     status: 'submitted',
-    priority: 'Medium',
-    department: 'Electrical Department',
+    priority: undefined,
+    department: undefined,
     citizenName: 'Demo Citizen (Resident)',
     citizenPhone: '+91 98260 12345',
     createdAt: '2026-09-18T18:00:00Z',

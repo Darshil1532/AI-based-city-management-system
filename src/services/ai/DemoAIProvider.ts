@@ -10,19 +10,19 @@ import { IAIProvider, AIAnalysisResult, AIInsightPattern } from './AIProvider';
 
 export class DemoAIProvider implements IAIProvider {
   name: 'Demo AI' = 'Demo AI';
-  label: string = 'Rule-Based Municipal Expert System (Demo AI)';
+  label: string = 'Demo AI';
 
   async isAvailable(): Promise<boolean> {
     return true; // Always available offline and locally
   }
 
-  async classifyComplaint(
+  classifyComplaintSync(
     description: string,
     userCategory?: ComplaintCategory,
     userSeverity?: SeverityLevel,
     location?: LocationCoordinates,
     existingComplaints: Complaint[] = []
-  ): Promise<AIAnalysisResult> {
+  ): AIAnalysisResult {
     const text = (description || '').toLowerCase();
     const factors: string[] = [];
     const urgencyIndicators: string[] = [];
@@ -214,6 +214,22 @@ export class DemoAIProvider implements IAIProvider {
       providerLabel: this.label,
       timestamp: new Date().toISOString(),
     };
+  }
+
+  async classifyComplaint(
+    description: string,
+    userCategory?: ComplaintCategory,
+    userSeverity?: SeverityLevel,
+    location?: LocationCoordinates,
+    existingComplaints: Complaint[] = []
+  ): Promise<AIAnalysisResult> {
+    return this.classifyComplaintSync(
+      description,
+      userCategory,
+      userSeverity,
+      location,
+      existingComplaints
+    );
   }
 
   async generateInsights(complaints: Complaint[]): Promise<AIInsightPattern[]> {

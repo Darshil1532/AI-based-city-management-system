@@ -509,7 +509,7 @@ export const SmartCityMap: React.FC<SmartCityMapProps> = ({
 
         <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 8px; border-top: 1px solid #f1f5f9; margin-top: 6px;">
           <span style="font-size: 10px; color: #64748b;">Dept: <strong style="color: #0f172a;">${
-            complaint.department.split(' ')[0]
+            (complaint.assignedDepartment || complaint.department || 'Unassigned').split(' ')[0]
           }</strong></span>
           <button id="btn-view-${complaint.id}" style="font-size: 11px; font-weight: 700; color: #ffffff; background: #0f172a; border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
             <span>Details</span>

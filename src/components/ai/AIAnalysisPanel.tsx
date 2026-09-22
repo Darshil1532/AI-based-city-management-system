@@ -26,10 +26,13 @@ export const AIAnalysisPanel: React.FC<AIAnalysisPanelProps> = ({
   analysis: directAnalysis,
   showAdminActionHint = true,
 }) => {
+  const isHeuristicPreview = (directAnalysis as any)?.isHeuristicPreview;
+  const rawProvider = directAnalysis ? directAnalysis.provider : complaint?.aiProvider;
+  const providerDisplay = rawProvider === 'Gemini' ? 'Gemini 2.5 Flash' : 'Demo AI';
   const category = directAnalysis ? directAnalysis.category : complaint?.aiCategory;
   const priority = directAnalysis ? directAnalysis.priority : complaint?.aiPriority;
   const department = directAnalysis ? directAnalysis.department : complaint?.aiDepartment;
-  const confidence = directAnalysis ? directAnalysis.confidence : complaint?.aiConfidence ?? 0.94;
+  const confidence = directAnalysis ? directAnalysis.confidence : complaint?.aiConfidence;
   const reasoning = directAnalysis ? directAnalysis.reasoning : complaint?.aiReasoning;
   const factors = directAnalysis ? directAnalysis.factors : complaint?.aiFactors ?? [];
 
@@ -47,35 +50,68 @@ export const AIAnalysisPanel: React.FC<AIAnalysisPanelProps> = ({
   };
 
   return (
-    <div className="rounded-xl bg-gradient-to-b from-blue-50/40 to-white border border-blue-200/90 shadow-sm p-5 space-y-4">
+    <div
+      id="ai-analysis-panel"
+      className={`rounded-xl border shadow-sm p-5 space-y-4 ${
+        isHeuristicPreview
+          ? 'bg-gradient-to-b from-amber-50/40 via-white to-white border-amber-200'
+          : 'bg-gradient-to-b from-blue-50/40 to-white border-blue-200/90'
+      }`}
+    >
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-blue-100">
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs">
+          <div
+            className={`w-8 h-8 rounded-lg flex items-center justify-center shadow-xs text-white ${
+              isHeuristicPreview ? 'bg-amber-600' : 'bg-blue-600'
+            }`}
+          >
             <BrainCircuit className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-sm font-bold text-slate-900 tracking-tight">
-                AI Recommendation Dossier
+                {isHeuristicPreview ? 'Heuristic Form Preview' : 'AI Recommendation Dossier'}
               </h3>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
-                Decision-Support
-              </span>
+              {isHeuristicPreview ? (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200 font-mono">
+                  Heuristic Preview — not Gemini
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                  Decision-Support
+                </span>
+              )}
             </div>
             <p className="text-[11px] text-slate-500">
-              Autonomous linguistic, geospatial, and impact assessment
+              {isHeuristicPreview
+                ? 'Rule-based civic keywords assist form entry. Official AI inference processes upon submission.'
+                : `Decision-support evaluation • AI Provider: ${providerDisplay}`}
             </p>
           </div>
         </div>
 
-        {/* Confidence Score */}
-        <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-blue-200/90 text-xs shadow-2xs">
-          <span className="text-slate-500 font-medium">Confidence Score:</span>
-          <span className="font-mono font-bold text-blue-700 text-sm">
-            {Math.round((confidence || 0.94) * 100)}%
-          </span>
-        </div>
+        {/* Confidence or Heuristic Indicator Badge */}
+        {isHeuristicPreview ? (
+          <div className="flex items-center gap-1.5 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200/90 text-xs">
+            <span className="text-[11px] font-semibold text-amber-800 font-mono">
+              Rule-Based Match
+            </span>
+          </div>
+        ) : confidence !== undefined ? (
+          <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-blue-200/90 text-xs shadow-2xs">
+            <span className="text-slate-500 font-medium">Confidence Score:</span>
+            <span className="font-mono font-bold text-blue-700 text-sm">
+              {Math.round(confidence * 100)}%
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 text-xs">
+            <span className="text-[11px] font-medium text-slate-600 font-mono">
+              AI Provider: {providerDisplay}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Grid of 4 Primary AI Recommendations */}

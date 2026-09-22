@@ -1,6 +1,6 @@
 import { NotificationItem } from '../../types';
-
-const STORAGE_KEY = 'smartcity_notifications_v2';
+import { INotificationRepository } from '../../repositories/types';
+import { repositories } from '../../repositories';
 
 export interface INotificationService {
   getForUser(userId: string, role: 'citizen' | 'admin'): NotificationItem[];
@@ -11,79 +11,21 @@ export interface INotificationService {
   reset(): NotificationItem[];
 }
 
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: 'notif-init-1',
-    userId: 'admin',
-    title: 'Hotspot Cluster Detected',
-    message: 'Repeated pothole reports detected in Market Area. Verification advised.',
-    timestamp: '15 mins ago',
-    read: false,
-    type: 'hotspot',
-    link: '/admin/hotspots',
-  },
-  {
-    id: 'notif-init-2',
-    userId: 'admin',
-    title: 'Admin Review Required: SC1024',
-    message: 'Citizen reported high severity road damage. AI recommends High Priority & Public Works.',
-    timestamp: '40 mins ago',
-    read: false,
-    type: 'admin_action',
-    link: '/admin/complaint/SC1024',
-  },
-  {
-    id: 'notif-init-3',
-    userId: 'CIT-DEMO-01',
-    title: 'Complaint Registered: SC1024',
-    message: 'Your report regarding "Pothole / Road" has been logged and queued for administrative review.',
-    timestamp: '40 mins ago',
-    read: false,
-    type: 'submission',
-    link: '/track?id=SC1024',
-  },
-  {
-    id: 'notif-init-4',
-    userId: 'CIT-DEMO-01',
-    title: 'Status Update: SC1024 Assigned',
-    message: 'Public Works Department field team has been assigned to inspect your report.',
-    timestamp: '10 mins ago',
-    read: false,
-    type: 'assigned',
-    link: '/track?id=SC1024',
-  },
-];
-
 export class NotificationService implements INotificationService {
+  private repository: INotificationRepository;
   private notifications: NotificationItem[] = [];
 
-  constructor() {
-    this.load();
+  constructor(repository: INotificationRepository = repositories.notifications) {
+    this.repository = repository;
+    this.notifications = this.repository.getAll();
   }
 
-  private load(): void {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        this.notifications = JSON.parse(saved);
-        return;
-      }
-    } catch (e) {
-      console.warn('[NotificationService] Could not read from localStorage:', e);
-    }
-    this.notifications = [...INITIAL_NOTIFICATIONS];
-    this.persist();
-  }
-
-  private persist(): void {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.notifications));
-    } catch (e) {
-      console.warn('[NotificationService] Could not write to localStorage:', e);
-    }
+  private refreshFromRepository(): void {
+    this.notifications = this.repository.getAll();
   }
 
   getForUser(userId: string, role: 'citizen' | 'admin'): NotificationItem[] {
+    this.refreshFromRepository();
     return this.notifications.filter((n) => {
       if (role === 'admin') {
         // Admin gets admin and all-system notifications
@@ -101,37 +43,43 @@ export class NotificationService implements INotificationService {
       timestamp: 'Just now',
       read: false,
     };
-    this.notifications = [newItem, ...this.notifications];
-    this.persist();
-    return newItem;
+    const created = this.repository.create(newItem);
+    this.refreshFromRepository();
+    return created;
   }
 
   markAsRead(id: string): void {
-    this.notifications = this.notifications.map((n) =>
+    this.refreshFromRepository();
+    const updated = this.notifications.map((n) =>
       n.id === id ? { ...n, read: true } : n
     );
-    this.persist();
+    this.repository.saveAll(updated);
+    this.notifications = updated;
   }
 
   markAllAsRead(userId: string): void {
-    this.notifications = this.notifications.map((n) => {
+    this.refreshFromRepository();
+    const updated = this.notifications.map((n) => {
       if (n.userId === userId || (userId === 'admin' && n.userId === 'all')) {
         return { ...n, read: true };
       }
       return n;
     });
-    this.persist();
+    this.repository.saveAll(updated);
+    this.notifications = updated;
   }
 
   clear(userId: string): void {
-    this.notifications = this.notifications.filter((n) => n.userId !== userId);
-    this.persist();
+    this.refreshFromRepository();
+    const filtered = this.notifications.filter((n) => n.userId !== userId);
+    this.repository.saveAll(filtered);
+    this.notifications = filtered;
   }
 
   reset(): NotificationItem[] {
-    this.notifications = [...INITIAL_NOTIFICATIONS];
-    this.persist();
-    return [...this.notifications];
+    const list = this.repository.reset();
+    this.notifications = [...list];
+    return list;
   }
 }
 

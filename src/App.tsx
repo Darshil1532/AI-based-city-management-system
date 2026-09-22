@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
+import { AuthProvider } from './context/AuthContext';
 import { Header } from './components/common/Header';
 import { Sidebar } from './components/common/Sidebar';
 import { SignInModal } from './components/common/SignInModal';
@@ -185,9 +186,11 @@ const AppLayout: React.FC = () => {
 export function App() {
   return (
     <BrowserRouter>
-      <AppProvider>
-        <AppLayout />
-      </AppProvider>
+      <AuthProvider>
+        <AppProvider>
+          <AppLayout />
+        </AppProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

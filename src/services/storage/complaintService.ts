@@ -1,19 +1,15 @@
 import {
   Complaint,
-  ComplaintStatus,
-  PriorityLevel,
-  DepartmentName,
-  ComplaintCategory,
   ComplaintSearchResult,
 } from '../../types';
-import { INITIAL_COMPLAINTS } from '../../data/mockData';
-
-const STORAGE_KEY = 'smartcity_complaints_v2';
+import { IComplaintRepository } from '../../repositories/types';
+import { repositories } from '../../repositories';
 
 export interface IComplaintService {
   getAll(): Complaint[];
   getByCitizenId(citizenId: string): Complaint[];
   getById(id: string): Complaint | undefined;
+  getByIdForCitizen(id: string, citizenId: string): Complaint | undefined;
   search(query: string): ComplaintSearchResult[];
   create(complaint: Complaint): Complaint;
   update(id: string, updates: Partial<Complaint>): Complaint | undefined;
@@ -21,41 +17,30 @@ export interface IComplaintService {
   reset(): Complaint[];
 }
 
+/**
+ * ComplaintService manages domain business logic, in-memory indexing, search ranking,
+ * and privacy boundaries, delegating persistence to the IComplaintRepository.
+ */
 export class LocalComplaintService implements IComplaintService {
+  private repository: IComplaintRepository;
   private complaints: Complaint[] = [];
 
-  constructor() {
-    this.load();
+  constructor(repository: IComplaintRepository = repositories.complaints) {
+    this.repository = repository;
+    this.complaints = this.repository.getAll();
   }
 
-  private load(): void {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        this.complaints = JSON.parse(saved);
-        return;
-      }
-    } catch (e) {
-      console.warn('[ComplaintService] Could not read from localStorage:', e);
-    }
-    this.complaints = [...INITIAL_COMPLAINTS];
-    this.persist();
-  }
-
-  private persist(): void {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.complaints));
-    } catch (e) {
-      console.warn('[ComplaintService] Could not write to localStorage:', e);
-    }
+  private refreshFromRepository(): void {
+    this.complaints = this.repository.getAll();
   }
 
   getAll(): Complaint[] {
+    this.refreshFromRepository();
     return [...this.complaints];
   }
 
   getByCitizenId(citizenId: string): Complaint[] {
-    return this.complaints.filter((c) => c.citizenId === citizenId);
+    return this.repository.getByCitizenId(citizenId);
   }
 
   getById(id: string): Complaint | undefined {
@@ -65,7 +50,20 @@ export class LocalComplaintService implements IComplaintService {
     );
   }
 
+  getByIdForCitizen(id: string, citizenId: string): Complaint | undefined {
+    const complaint = this.getById(id);
+    if (!complaint) return undefined;
+    if (complaint.citizenId !== citizenId) {
+      console.warn(
+        `[Citizen Privacy] Access denied: Citizen ${citizenId} attempted to access complaint ${id} belonging to ${complaint.citizenId}`
+      );
+      return undefined;
+    }
+    return complaint;
+  }
+
   search(rawQuery: string): ComplaintSearchResult[] {
+    this.refreshFromRepository();
     const q = rawQuery.trim().toLowerCase();
     if (!q) return [];
     const upperQuery = rawQuery.trim().toUpperCase();
@@ -86,7 +84,7 @@ export class LocalComplaintService implements IComplaintService {
       const districtLower = (c.location.district || '').toLowerCase();
       const citizenLower = (c.citizenName || '').toLowerCase();
       const statusLower = c.status.toLowerCase();
-      const priorityLower = c.priority.toLowerCase();
+      const priorityLower = (c.priority || c.finalPriority || c.aiPriority || '').toLowerCase();
 
       // ID matching
       if (idUpper === upperQuery || idUpper === `SC-${upperQuery}`) {
@@ -97,13 +95,14 @@ export class LocalComplaintService implements IComplaintService {
         matchedFields.push('id');
       }
 
-      // Title matching
-      if (titleLower === q) {
-        score += 80;
-        matchedFields.push('title');
-      } else if (titleLower.includes(q)) {
+      // Exact title or keyword matches
+      if (titleLower.includes(q)) {
         score += 60;
         matchedFields.push('title');
+      }
+      if (descLower.includes(q)) {
+        score += 40;
+        matchedFields.push('description');
       }
 
       // Category matching
@@ -114,26 +113,20 @@ export class LocalComplaintService implements IComplaintService {
 
       // Department matching
       if (deptLower.includes(q)) {
-        score += 45;
+        score += 35;
         matchedFields.push('department');
       }
 
-      // Location matching (Address, Landmark, District)
+      // Location matching
       if (addrLower.includes(q) || landmarkLower.includes(q) || districtLower.includes(q)) {
-        score += 40;
+        score += 30;
         matchedFields.push('location');
       }
 
-      // Citizen name matching
+      // Citizen name matching (for administrators)
       if (citizenLower.includes(q)) {
-        score += 35;
-        matchedFields.push('citizen');
-      }
-
-      // Description matching
-      if (descLower.includes(q)) {
         score += 25;
-        matchedFields.push('description');
+        matchedFields.push('citizen');
       }
 
       // Status / Priority match
@@ -160,40 +153,26 @@ export class LocalComplaintService implements IComplaintService {
   }
 
   create(complaint: Complaint): Complaint {
-    this.complaints = [complaint, ...this.complaints];
-    this.persist();
-    return complaint;
+    const created = this.repository.create(complaint);
+    this.refreshFromRepository();
+    return created;
   }
 
   update(id: string, updates: Partial<Complaint>): Complaint | undefined {
-    let updated: Complaint | undefined;
-    this.complaints = this.complaints.map((c) => {
-      if (c.id === id) {
-        updated = {
-          ...c,
-          ...updates,
-          updatedAt: new Date().toISOString(),
-        };
-        return updated;
-      }
-      return c;
-    });
-
-    if (updated) {
-      this.persist();
-    }
+    const updated = this.repository.update(id, updates);
+    this.refreshFromRepository();
     return updated;
   }
 
   saveAll(complaints: Complaint[]): void {
-    this.complaints = [...complaints];
-    this.persist();
+    this.repository.saveAll(complaints);
+    this.refreshFromRepository();
   }
 
   reset(): Complaint[] {
-    this.complaints = [...INITIAL_COMPLAINTS];
-    this.persist();
-    return [...this.complaints];
+    const resetList = this.repository.reset();
+    this.complaints = [...resetList];
+    return resetList;
   }
 }
 

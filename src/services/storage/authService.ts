@@ -1,31 +1,36 @@
+/**
+ * Demo authentication for prototype.
+ * 
+ * ARCHITECTURE NOTICE:
+ * This authentication service is a client-side mock implementation designed specifically
+ * for hackathon evaluation and interactive UI workflow demonstration.
+ * 
+ * DO NOT claim production-grade security for this prototype authentication layer.
+ * 
+ * The architecture is intentionally decoupled via the IAuthService interface and IAuthRepository,
+ * allowing this module to be seamlessly replaced with enterprise identity providers:
+ * - Supabase Auth (OAuth 2.0 / JWT)
+ * - Firebase Auth (Google / Phone / Email Auth)
+ * - Custom JWT (HttpOnly Secure Session Cookies)
+ * - Auth.js (NextAuth / OpenID Connect)
+ */
+
 import { UserProfile } from '../../types';
+import { IAuthRepository } from '../../repositories/types';
+import {
+  DEMO_CITIZEN_PROFILE,
+  DEMO_ADMIN_PROFILE,
+} from '../../repositories/local/LocalStorageRepositories';
+import { repositories } from '../../repositories';
 
-export const DEMO_CITIZEN: UserProfile = {
-  id: 'CIT-DEMO-01',
-  name: 'Demo Citizen',
-  role: 'citizen',
-  email: 'demo.citizen@smartcity.local',
-  phone: '+91 98260 12345',
-  title: 'Verified Resident • MP Nagar Ward 12',
-  badge: 'Resident Account (Demo)',
-};
-
-export const DEMO_ADMIN: UserProfile = {
-  id: 'ADM-DEMO-01',
-  name: 'Demo Administrator',
-  role: 'admin',
-  email: 'admin@smartcity.local',
-  phone: '+91 98260 54321',
-  title: 'Municipal Operations Lead • Civic Command Center',
-  badge: 'Clearance Level 4 (Admin)',
-  department: 'Municipal Operations & Maintenance',
-};
-
-const STORAGE_KEY = 'smartcity_auth_user_v2';
+export const DEMO_CITIZEN = DEMO_CITIZEN_PROFILE;
+export const DEMO_ADMIN = DEMO_ADMIN_PROFILE;
 
 export interface IAuthService {
+  readonly currentUser: UserProfile;
+  readonly role: 'citizen' | 'admin';
+  readonly isAuthenticated: boolean;
   getCurrentUser(): UserProfile;
-  isAuthenticated(): boolean;
   login(role: 'citizen' | 'admin', customName?: string): UserProfile;
   logout(): void;
   isAdmin(): boolean;
@@ -33,39 +38,29 @@ export interface IAuthService {
 }
 
 export class AuthService implements IAuthService {
-  private user: UserProfile = DEMO_CITIZEN;
+  private repository: IAuthRepository;
+  private user: UserProfile;
 
-  constructor() {
-    this.load();
+  constructor(repository: IAuthRepository = repositories.auth) {
+    this.repository = repository;
+    this.user = this.repository.getCurrentUser();
   }
 
-  private load(): void {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        this.user = JSON.parse(saved);
-        return;
-      }
-    } catch (e) {
-      console.warn('[AuthService] Failed to read auth state from localStorage:', e);
-    }
-    this.user = DEMO_CITIZEN;
+  get currentUser(): UserProfile {
+    return { ...this.user };
   }
 
-  private persist(): void {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.user));
-    } catch (e) {
-      console.warn('[AuthService] Failed to persist auth state:', e);
-    }
+  get role(): 'citizen' | 'admin' {
+    return this.user.role;
+  }
+
+  get isAuthenticated(): boolean {
+    // In demo prototype mode, the session is active as either citizen or admin
+    return !!this.user && !!this.user.id;
   }
 
   getCurrentUser(): UserProfile {
     return { ...this.user };
-  }
-
-  isAuthenticated(): boolean {
-    return true; // Always authenticated in demo mode as citizen or admin
   }
 
   login(role: 'citizen' | 'admin', customName?: string): UserProfile {
@@ -74,13 +69,14 @@ export class AuthService implements IAuthService {
     } else {
       this.user = customName ? { ...DEMO_CITIZEN, name: customName } : DEMO_CITIZEN;
     }
-    this.persist();
+    this.repository.saveCurrentUser(this.user);
     return { ...this.user };
   }
 
   logout(): void {
+    // Return to default citizen persona for prototype navigation continuity
     this.user = DEMO_CITIZEN;
-    this.persist();
+    this.repository.saveCurrentUser(this.user);
   }
 
   isAdmin(): boolean {

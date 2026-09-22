@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
@@ -41,7 +41,7 @@ const SAMPLE_PHOTO_PREVIEWS = [
 
 export const ReportIssuePage: React.FC = () => {
   const navigate = useNavigate();
-  const { submitComplaint, complaints, currentUser } = useApp();
+  const { submitComplaint, complaints, currentUser, aiProviderType } = useApp();
 
   const [description, setDescription] = useState(
     'Large asphalt crater and trench forming near the main market entrance. Rainwater accumulates rapidly causing severe vehicle congestion and motorcycle skidding.'
@@ -70,15 +70,18 @@ export const ReportIssuePage: React.FC = () => {
     image?: string;
   }>({});
 
-  // Live real-time AI analysis preview as user edits
-  const liveAIAnalysis = useMemo(() => {
-    return aiService.analyzeComplaintSync(
-      description,
-      category,
-      severity,
-      location,
-      complaints
-    );
+  // Debounced live heuristic preview to prevent excessive computation on rapid keystrokes
+  const [liveAIAnalysis, setLiveAIAnalysis] = useState(() =>
+    aiService.analyzeComplaintSync(description, category, severity, location, complaints)
+  );
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLiveAIAnalysis(
+        aiService.analyzeComplaintSync(description, category, severity, location, complaints)
+      );
+    }, 250);
+    return () => clearTimeout(timer);
   }, [description, category, severity, location, complaints]);
 
   const validateForm = (): boolean => {
@@ -487,17 +490,16 @@ export const ReportIssuePage: React.FC = () => {
           </form>
         </div>
 
-        {/* Right Column: Real-Time AI Analysis Preview */}
+        {/* Right Column: Pre-Submission Heuristic Preview */}
         <div className="lg:col-span-5 space-y-4">
           <div className="sticky top-20 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 font-mono">
-                <Sparkles className="w-4 h-4 text-blue-600" />
-                Live AI Analysis Preview
+                <Sparkles className="w-4 h-4 text-amber-600" />
+                Pre-Submission Live Preview
               </span>
-              <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Active Inference
+              <span className="text-[10px] text-amber-800 font-semibold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 font-mono">
+                Heuristic Match
               </span>
             </div>
 
@@ -506,10 +508,10 @@ export const ReportIssuePage: React.FC = () => {
 
             <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200/70 text-xs text-slate-600 space-y-1.5">
               <span className="font-bold text-slate-800 block text-xs">
-                How AI Decision-Support Works
+                Municipal AI Transparency Notice
               </span>
               <p className="text-[11px] leading-relaxed text-slate-500">
-                When you click submit, this AI breakdown is attached to your complaint record. City administrators in the municipal control center review the recommendation, confirm or adjust the priority, and dispatch field crews accordingly.
+                This real-time preview uses local heuristic rules to assist form completion. Official decision support will be processed by <strong className="text-slate-700">{aiProviderType === 'Gemini' ? 'Gemini 2.5 Flash' : 'Demo AI'}</strong> upon submission. All final administrative triage decisions remain strictly with human municipal officers.
               </p>
             </div>
           </div>
