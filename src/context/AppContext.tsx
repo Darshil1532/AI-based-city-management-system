@@ -80,7 +80,7 @@ export interface AppContextType {
     auditNote?: string
   ) => void;
   updateComplaint: (id: string, updates: Partial<Complaint>) => void;
-  resolveComplaint: (id: string, resolutionDetails?: string) => void;
+  resolveComplaint: (id: string, resolutionDetails?: string, overrideNote?: string) => void;
 
   // Batch Operations
   bulkAssignDepartment: (
@@ -367,24 +367,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updatedInsights = insightService.generateFromComplaints(updatedAll);
     setInsightsList(updatedInsights);
 
-    // Notifications
-    // 1. For citizen
+    // Phase 17: Notifications Generation
+    // 1. Complaint Submitted (Citizen)
     notificationService.add({
       userId: currentUser.id,
-      title: `Complaint Registered: ${newId}`,
-      message: `Your report for "${data.category}" has been received and queued for review.`,
+      title: `Complaint Submitted: ${newId}`,
+      message: `Your report for "${data.category}" at ${data.location.address || 'location'} has been logged into the municipal registry.`,
       type: 'submission',
       link: `/track?id=${newId}`,
     });
 
-    // 2. For admin
+    // 2. AI Analysis Completed (Citizen)
+    notificationService.add({
+      userId: currentUser.id,
+      title: `AI Analysis Completed: ${newId}`,
+      message: `AI classified your complaint as ${aiAnalysis.category} with recommended ${aiAnalysis.priority} priority for ${aiAnalysis.department}.`,
+      type: 'ai_alert',
+      link: `/track?id=${newId}`,
+    });
+
+    // 3. Admin Review Required (Admin)
     notificationService.add({
       userId: 'admin',
       title: `Admin Review Required: ${newId}`,
-      message: `Citizen filed ${data.severity} severity issue. AI recommends ${aiAnalysis.priority} priority to ${aiAnalysis.department}.`,
+      message: `New civic report filed: ${data.category} (${data.severity} severity). AI recommends ${aiAnalysis.priority} priority to ${aiAnalysis.department}.`,
       type: 'admin_action',
       link: `/admin/complaint/${newId}`,
     });
+
+    // 4. Hotspot Detected (Admin) if cluster count grew
+    if (updatedHotspots.length > hotspotsList.length && updatedHotspots[0]) {
+      const topSpot = updatedHotspots[0];
+      notificationService.add({
+        userId: 'admin',
+        title: `Hotspot Detected: ${topSpot.name}`,
+        message: `${topSpot.complaintCount} related complaints clustered around ${topSpot.locationName}.`,
+        type: 'hotspot',
+        link: '/admin/hotspots',
+      });
+    }
+
+    // 5. AI Insight Generated (Admin) if insights grew
+    if (updatedInsights.length > insightsList.length && updatedInsights[0]) {
+      const topIns = updatedInsights[0];
+      notificationService.add({
+        userId: 'admin',
+        title: `AI Insight Generated: ${topIns.title}`,
+        message: `Systemic pattern detected: ${topIns.detectedPattern.slice(0, 100)}...`,
+        type: 'admin_action',
+        link: '/admin/insights',
+      });
+    }
 
     refreshNotifications();
     return saved;
@@ -537,11 +570,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const prevStatus = existing.status;
     const newStatus = updates.status || prevStatus;
 
-    // Strict Lifecycle state progression
+    // Strict Lifecycle state progression:
+    // Submitted -> Assigned -> In Progress -> Resolved
+    // Prevent invalid transitions: Submitted -> Resolved requires an explicit administrative override rationale
     if (updates.status && updates.status !== prevStatus) {
+      const isDirectResolve = prevStatus === 'submitted' && newStatus === 'resolved';
+      const effectiveNote = auditNote || updates.adminNotes || updates.resolutionDetails;
+      
+      if (isDirectResolve && !effectiveNote) {
+        console.warn(`[Complaint Lifecycle] Direct transition from ${prevStatus} to ${newStatus} without override rationale.`);
+      }
+
+      const noteText = isDirectResolve
+        ? (auditNote || `Administrative Fast-Track Override: Resolved directly by ${currentUser.name}. Reason: ${updates.resolutionDetails || 'Emergency resolution on site'}`)
+        : (effectiveNote || `Status updated from ${prevStatus} to ${newStatus}`);
+
       if (newStatus === 'assigned') {
         timeline.push({
           status: 'assigned',
+          previousStatus: prevStatus,
+          newStatus: 'assigned',
           timestamp: now,
           title: `Work Order Assigned to ${updates.department || existing.department}`,
           description:
@@ -550,11 +598,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               updates.assignedOfficer ? ` (Officer: ${updates.assignedOfficer})` : ''
             }.`,
           actor: currentUser.name,
+          note: noteText,
           badgeType: 'admin',
         });
       } else if (newStatus === 'in_progress') {
         timeline.push({
           status: 'in_progress',
+          previousStatus: prevStatus,
+          newStatus: 'in_progress',
           timestamp: now,
           title: 'Field Crew Dispatched (In Progress)',
           description:
@@ -562,19 +613,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             `Municipal field team from ${
               updates.department || existing.department
             } deployed on site for inspection and repair.`,
-          actor: updates.assignedOfficer || 'Municipal Field Operations',
+          actor: updates.assignedOfficer || currentUser.name,
+          note: noteText,
           badgeType: 'department',
         });
       } else if (newStatus === 'resolved') {
+        const finalResolution =
+          updates.resolutionDetails ||
+          auditNote ||
+          'Municipal field repair inspected and officially verified by site supervisor.';
         timeline.push({
           status: 'resolved',
+          previousStatus: prevStatus,
+          newStatus: 'resolved',
           timestamp: now,
-          title: 'Issue Resolved & Verified',
-          description:
-            updates.resolutionDetails ||
-            auditNote ||
-            'Field repair completed and verified by municipal inspection supervisor.',
+          title: isDirectResolve ? 'Issue Resolved (Administrative Override)' : 'Issue Resolved & Verified',
+          description: finalResolution,
           actor: currentUser.name,
+          note: noteText,
           badgeType: 'admin',
         });
       }
@@ -583,10 +639,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (auditNote && !updates.status) {
       timeline.push({
         status: newStatus,
+        previousStatus: prevStatus,
+        newStatus: newStatus,
         timestamp: now,
         title: 'Administrative Note Added',
         description: auditNote,
         actor: currentUser.name,
+        note: auditNote,
         badgeType: 'admin',
       });
     }
@@ -595,7 +654,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...updates,
       timeline,
       ...(updates.status === 'resolved'
-        ? { resolvedAt: now, resolvedBy: currentUser.name }
+        ? {
+            resolvedAt: updates.resolvedAt || now,
+            resolvedBy: updates.resolvedBy || currentUser.name,
+            resolutionDetails: updates.resolutionDetails || auditNote || 'Repairs verified on site.',
+          }
         : {}),
     });
 
@@ -607,22 +670,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const updatedHotspots = hotspotService.detectClusters(allUpdated);
       setHotspotsList(updatedHotspots);
 
-      // Notifications on status change
+      // Phase 17: Notifications on status change
       if (updates.status && updates.status !== prevStatus) {
-        // Citizen notification
+        const isResolved = updates.status === 'resolved';
+        const isInProgress = updates.status === 'in_progress';
+
+        // Citizen notification (own complaints only)
         notificationService.add({
           userId: existing.citizenId,
-          title: `Status Update: ${id} is ${updates.status.replace('_', ' ').toUpperCase()}`,
-          message: auditNote || `Your complaint status has moved to ${updates.status.replace('_', ' ')}.`,
-          type: updates.status === 'resolved' ? 'resolved' : updates.status === 'in_progress' ? 'in_progress' : 'assigned',
+          title: isResolved
+            ? `Complaint Resolved: ${id}`
+            : isInProgress
+            ? `Complaint In Progress: ${id}`
+            : `Complaint Assigned: ${id}`,
+          message: isResolved
+            ? (updates.resolutionDetails || 'Your complaint has been repaired and verified by municipal inspection.')
+            : isInProgress
+            ? 'Municipal field operations crew is currently deployed on site.'
+            : `Assigned to ${updates.department || existing.department} for scheduled resolution.`,
+          type: isResolved ? 'resolved' : isInProgress ? 'in_progress' : 'assigned',
           link: `/track?id=${id}`,
         });
 
-        // Admin notification
+        // Admin notification (operational)
         notificationService.add({
           userId: 'admin',
-          title: `Complaint ${id} Updated`,
-          message: `Status transitioned from ${prevStatus} to ${updates.status}.`,
+          title: isResolved
+            ? `Complaint Resolved: ${id}`
+            : isInProgress
+            ? `Complaint In Progress: ${id}`
+            : `Complaint Assigned: ${id}`,
+          message: isResolved
+            ? `Resolution verified by ${currentUser.name}: ${updates.resolutionDetails || 'Repairs verified'}`
+            : `Status transitioned from ${prevStatus} to ${updates.status}.`,
           type: 'admin_action',
           link: `/admin/complaint/${id}`,
         });
@@ -653,12 +733,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     updateComplaintDetails(id, updates);
   };
 
-  const resolveComplaint = (id: string, resolutionDetails?: string) => {
-    updateComplaintStatus(
+  const resolveComplaint = (id: string, resolutionDetails?: string, overrideNote?: string) => {
+    const existing = complaintService.getById(id);
+    const now = new Date().toISOString();
+    const verifier = currentUser.name;
+    const finalResolution =
+      resolutionDetails?.trim() ||
+      'Municipal field repair inspected and officially verified by site supervisor.';
+    const isOverride = existing?.status === 'submitted';
+
+    updateComplaintDetails(
       id,
-      'resolved',
-      undefined,
-      resolutionDetails || 'Municipal repair completed and verified on site.'
+      {
+        status: 'resolved',
+        resolutionDetails: finalResolution,
+        resolvedBy: verifier,
+        resolvedAt: now,
+      },
+      isOverride
+        ? (overrideNote || `Administrative Override: Direct resolution authorized by ${verifier}. Rationale: ${finalResolution}`)
+        : `Verified on-site: ${finalResolution}`
     );
   };
 

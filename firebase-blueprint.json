@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "complaint": {
+      "title": "Municipal Complaint",
+      "description": "Civic complaints filed by citizens and tracked by municipal authorities",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "citizenId": { "type": "string" },
+        "citizenName": { "type": "string" },
+        "citizenPhone": { "type": "string" },
+        "citizenEmail": { "type": "string" },
+        "category": { "type": "string" },
+        "department": { "type": "string" },
+        "severity": { "type": "string" },
+        "status": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "location": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "assignedOfficer": { "type": "string" }
+      },
+      "required": ["id", "category", "severity", "status", "title", "description", "createdAt"]
+    },
+    "insight": {
+      "title": "AI Insight",
+      "description": "Cross-issue systemic municipal intelligence and proactive recommendations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "detectedPattern": { "type": "string" },
+        "recommendation": { "type": "string" },
+        "suggestedDepartment": { "type": "string" },
+        "priority": { "type": "string" },
+        "location": { "type": "string" },
+        "status": { "type": "string" },
+        "date": { "type": "string" }
+      },
+      "required": ["id", "title", "detectedPattern", "recommendation", "status"]
+    },
+    "notification": {
+      "title": "Civic Notification",
+      "description": "System alerts and dispatch updates for municipal residents and administrators",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "read": { "type": "boolean" },
+        "type": { "type": "string" }
+      },
+      "required": ["id", "userId", "title", "message", "timestamp", "read", "type"]
+    }
+  },
+  "firestore": {
+    "/complaints/{complaintId}": {
+      "schema": "complaint",
+      "description": "Civic complaint records filed by citizens and resolved by city departments"
+    },
+    "/insights/{insightId}": {
+      "schema": "insight",
+      "description": "Systemic intelligence patterns and root-cause hypotheses"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "notification",
+      "description": "Civic notifications for municipal users"
+    }
+  }
+}

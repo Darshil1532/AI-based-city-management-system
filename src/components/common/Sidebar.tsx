@@ -12,11 +12,7 @@ import {
   Lightbulb,
   Building,
   Settings,
-  HelpCircle,
-  Home,
   ShieldCheck,
-  Radio,
-  Keyboard,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -24,8 +20,8 @@ interface SidebarProps {
   isOpenMobile?: boolean;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, isOpenMobile }) => {
-  const { activePersona, complaints, allComplaints, hotspots, aiInsights, setIsShortcutsModalOpen } = useApp();
+export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
+  const { activePersona, complaints, allComplaints, hotspots, aiInsights } = useApp();
   const location = useLocation();
 
   const pendingCount = (allComplaints || complaints).filter((c) => c.status === 'submitted').length;
@@ -183,37 +179,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, isOpenMobile })
             </NavLink>
           );
         })}
-
-        <div className="pt-3 pb-1 border-t border-slate-100/90 mt-3">
-          <span className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1 font-mono">
-            Navigation
-          </span>
-          <NavLink
-            to="/"
-            onClick={onCloseMobile}
-            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100/70 hover:text-slate-900 transition-colors"
-          >
-            <Home className="w-4 h-4 text-slate-400" />
-            <span>Public Home & Workflow</span>
-          </NavLink>
-
-          <button
-            type="button"
-            onClick={() => {
-              onCloseMobile?.();
-              setIsShortcutsModalOpen(true);
-            }}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100/70 hover:text-slate-900 transition-colors cursor-pointer mt-1"
-          >
-            <div className="flex items-center gap-2.5">
-              <Keyboard className="w-4 h-4 text-slate-400" />
-              <span>Keyboard Shortcuts</span>
-            </div>
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold text-slate-500 bg-slate-100 rounded border border-slate-200">
-              ?
-            </kbd>
-          </button>
-        </div>
       </nav>
 
       {/* Footer Info Box */}

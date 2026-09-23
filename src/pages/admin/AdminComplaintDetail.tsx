@@ -31,6 +31,7 @@ import {
   Shield,
   Send,
   MessageSquare,
+  X,
 } from 'lucide-react';
 
 const DEPARTMENT_LIST: DepartmentName[] = [
@@ -61,6 +62,7 @@ export const AdminComplaintDetail: React.FC = () => {
     resolveComplaint,
     ratifyAIRecommendation,
     overrideAIRecommendation,
+    currentUser,
   } = useApp();
 
   const complaint = id ? getComplaintById(id) : undefined;
@@ -80,7 +82,7 @@ export const AdminComplaintDetail: React.FC = () => {
   );
   const [adminNotes, setAdminNotes] = useState(complaint?.adminNotes || '');
   const [assignedOfficer, setAssignedOfficer] = useState(
-    complaint?.assignedOfficer || 'Inspector J. Martinez (Unit 4)'
+    complaint?.assignedOfficer || 'Demo Municipal Officer'
   );
   const [estimatedResolutionTime, setEstimatedResolutionTime] = useState<string>(
     complaint?.estimatedResolutionTime || '24-48 Hours'
@@ -97,7 +99,7 @@ export const AdminComplaintDetail: React.FC = () => {
       setSelectedDepartment(complaint.assignedDepartment || complaint.aiDepartment || complaint.department || 'Public Works Department');
       setSelectedStatus(complaint.status);
       setAdminNotes(complaint.adminNotes || '');
-      setAssignedOfficer(complaint.assignedOfficer || 'Inspector J. Martinez (Unit 4)');
+      setAssignedOfficer(complaint.assignedOfficer || 'Demo Municipal Officer');
       setEstimatedResolutionTime(complaint.estimatedResolutionTime || '24-48 Hours');
       setResolutionDetails(complaint.resolutionDetails || '');
     }
@@ -191,23 +193,56 @@ export const AdminComplaintDetail: React.FC = () => {
     setTimeout(() => setIsSaved(false), 3000);
   };
 
-  // Step 14 & 15: Record Resolution & Resolve
-  const handleResolveWithReport = (customText?: string) => {
-    const textToSave =
-      customText ||
+  // Resolution Verification Modal State (Phase 16)
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+  const [verifyResolutionDetails, setVerifyResolutionDetails] = useState('');
+  const [verifyOfficer, setVerifyOfficer] = useState('');
+  const [overrideRationale, setOverrideRationale] = useState('');
+  const [verificationError, setVerificationError] = useState('');
+
+  const openVerificationModal = () => {
+    setVerifyResolutionDetails(
       resolutionDetails ||
-      'Municipal maintenance and structural repairs completed. Inspected and verified on site by administrative supervisor.';
-    setResolutionDetails(textToSave);
+        'Municipal repair completed on site. Field inspection passed civic engineering safety standards.'
+    );
+    setVerifyOfficer(assignedOfficer || currentUser.name);
+    setOverrideRationale('');
+    setVerificationError('');
+    setIsVerificationModalOpen(true);
+  };
+
+  const handleConfirmVerification = () => {
+    if (!verifyResolutionDetails.trim()) {
+      setVerificationError('Resolution details are required to verify resolution.');
+      return;
+    }
+    if (!verifyOfficer.trim()) {
+      setVerificationError('Verifying municipal officer name is required.');
+      return;
+    }
+    if (complaint.status === 'submitted' && !overrideRationale.trim()) {
+      setVerificationError(
+        'Administrative override rationale is required for direct resolution from "Submitted" status.'
+      );
+      return;
+    }
+
+    setResolutionDetails(verifyResolutionDetails);
     setSelectedStatus('resolved');
-    resolveComplaint(complaint.id, textToSave);
+    resolveComplaint(
+      complaint.id,
+      verifyResolutionDetails,
+      overrideRationale.trim() || undefined
+    );
+    setIsVerificationModalOpen(false);
     setIsSaved(true);
-    setSaveMessage('Resolution recorded and complaint marked officially Resolved.');
+    setSaveMessage('Resolution verified and complaint marked officially Resolved.');
     setTimeout(() => setIsSaved(false), 3000);
   };
 
-  // Quick Mark as Resolved action
+  // Quick Mark as Resolved action opens verification modal
   const handleQuickResolve = () => {
-    handleResolveWithReport();
+    openVerificationModal();
   };
 
   // Keyboard triage shortcuts: 'r' for Ratify, 'd' for Deploy Crew, 'v' for Resolve
@@ -478,7 +513,7 @@ export const AdminComplaintDetail: React.FC = () => {
               />
               <button
                 type="button"
-                onClick={() => handleResolveWithReport()}
+                onClick={() => handleQuickResolve()}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-all shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
               >
                 <CheckCheck className="w-3.5 h-3.5" />
@@ -777,7 +812,7 @@ export const AdminComplaintDetail: React.FC = () => {
                 type="text"
                 value={assignedOfficer}
                 onChange={(e) => setAssignedOfficer(e.target.value)}
-                placeholder="e.g. Inspector J. Martinez (Squad 4) / Apex Roadworks"
+                placeholder="e.g. Demo Municipal Officer (Zone Operations) / PWD Squad"
                 className="w-full px-3 py-2 text-xs bg-slate-50/70 border border-slate-200/90 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
               />
             </div>
@@ -906,6 +941,112 @@ export const AdminComplaintDetail: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Phase 16: Resolution & Verification Modal */}
+      {isVerificationModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <CheckCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Municipal Resolution Verification
+                  </h3>
+                  <p className="text-[11px] text-slate-500 font-mono">
+                    Complaint ID: {complaint.id}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsVerificationModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {complaint.status === 'submitted' && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                  <AlertTriangle className="w-4 h-4 text-amber-600" />
+                  <span>Administrative Fast-Track Override Required</span>
+                </div>
+                <p className="text-amber-800 text-[11px] leading-relaxed">
+                  Strict municipal lifecycle prohibits direct transition from <strong>Submitted</strong> to <strong>Resolved</strong> without recorded human administrative override rationale.
+                </p>
+                <div className="mt-2">
+                  <label className="block text-[10px] font-bold text-amber-900 uppercase font-mono mb-1">
+                    Override Rationale (Mandatory):
+                  </label>
+                  <textarea
+                    value={overrideRationale}
+                    onChange={(e) => setOverrideRationale(e.target.value)}
+                    rows={2}
+                    placeholder="Document why intermediate Assigned/In Progress stages were bypassed (e.g. Prior completed inspection)..."
+                    className="w-full p-2 text-xs bg-white border border-amber-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-900"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1 font-mono">
+                  1. Resolution Details & Repairs Completed: <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  value={verifyResolutionDetails}
+                  onChange={(e) => setVerifyResolutionDetails(e.target.value)}
+                  rows={3}
+                  placeholder="Detail the physical repair or intervention completed on site..."
+                  className="w-full p-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1 font-mono">
+                  2. Verifying Municipal Officer / Inspector: <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={verifyOfficer}
+                  onChange={(e) => setVerifyOfficer(e.target.value)}
+                  placeholder="Demo Municipal Officer / Ward Inspector"
+                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                />
+              </div>
+            </div>
+
+            {verificationError && (
+              <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700 font-medium">
+                {verificationError}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsVerificationModalOpen(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmVerification}
+                className="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-2xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <CheckCheck className="w-3.5 h-3.5" />
+                <span>Verify & Mark Resolved</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

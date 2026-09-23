@@ -38,7 +38,7 @@ export class AIServiceManager {
   }
 
   getActiveProviderLabel(): string {
-    return this.activeProviderType === 'Gemini' ? 'Gemini 2.5 Flash' : 'Demo AI';
+    return this.activeProviderType === 'Gemini' ? 'Gemini 3.1 Flash Lite' : 'Demo AI';
   }
 
   setForcedProvider(type: AIProviderType) {
@@ -91,7 +91,7 @@ export class AIServiceManager {
       existingComplaints
     );
 
-    const targetModel = this.activeProviderType === 'Gemini' ? 'Gemini 2.5 Flash' : 'Demo AI';
+    const targetModel = this.activeProviderType === 'Gemini' ? 'Gemini 3.1 Flash Lite' : 'Demo AI';
 
     return {
       ...heuristicResult,

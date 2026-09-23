@@ -75,7 +75,7 @@ export const DEFAULT_NOTIFICATIONS: NotificationItem[] = [
     id: 'notif-init-4',
     userId: 'CIT-DEMO-01',
     title: 'Work Order Dispatched: SC1024',
-    message: 'Public Works Department assigned field crew (Inspector J. Martinez). Resolution in progress.',
+    message: 'Public Works Department assigned field crew (Demo Municipal Officer). Resolution in progress.',
     timestamp: '10 mins ago',
     read: false,
     type: 'assigned',

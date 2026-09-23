@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Civic complaints collection
+    match /complaints/{complaintId} {
+      allow read: if isValidId(complaintId);
+      allow create: if isValidId(complaintId)
+                    && incoming().keys().hasAll(['id', 'category', 'severity', 'status', 'title', 'description', 'createdAt'])
+                    && incoming().id is string
+                    && incoming().category is string
+                    && incoming().severity is string
+                    && incoming().status is string
+                    && incoming().title is string && incoming().title.size() <= 500
+                    && incoming().description is string && incoming().description.size() <= 4000;
+      allow update: if isValidId(complaintId);
+      allow delete: if false;
+    }
+
+    // AI Insights collection
+    match /insights/{insightId} {
+      allow read: if isValidId(insightId);
+      allow create, update: if isValidId(insightId)
+                            && incoming().keys().hasAll(['id', 'title', 'detectedPattern', 'recommendation', 'status'])
+                            && incoming().id is string
+                            && incoming().title is string && incoming().title.size() <= 300
+                            && incoming().detectedPattern is string && incoming().detectedPattern.size() <= 2000
+                            && incoming().recommendation is string && incoming().recommendation.size() <= 2000;
+      allow delete: if false;
+    }
+
+    // Notifications collection
+    match /notifications/{notificationId} {
+      allow read: if isValidId(notificationId);
+      allow create, update: if isValidId(notificationId)
+                            && incoming().keys().hasAll(['id', 'userId', 'title', 'message', 'timestamp', 'read', 'type'])
+                            && incoming().title is string && incoming().title.size() <= 300
+                            && incoming().message is string && incoming().message.size() <= 1500;
+      allow delete: if false;
+    }
+
+    // Test connectivity document
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

@@ -244,11 +244,13 @@ export class DemoAIProvider implements IAIProvider {
         detectedPattern: `${roadIssues.length} active road surface issues detected. High density near major transit gates indicates subsurface base erosion after recent rain.`,
         recommendation: 'Public Works should inspect sub-base compaction and dispatch hot-mix paving trucks rather than temporary cold-patching.',
         priority: 'High',
+        department: 'Public Works Department',
         suggestedDepartment: 'Public Works Department',
-        location: roadIssues[0].location.address || 'Main Market Road Corridor',
+        location: roadIssues[0].location.district || roadIssues[0].location.address || 'Main Market Road Corridor',
         relatedComplaintIds: roadIssues.map((c) => c.id).slice(0, 5),
         potentialCauseHypothesis: 'Stormwater pooling combined with heavy transit axle loads causing accelerated sub-grade degradation.',
         estimatedImpact: 'Reduces transit vehicle damage and prevents peak-hour congestion bottlenecks.',
+        disclaimer: 'AI-generated hypothesis — requires administrative validation.',
       });
     }
 
@@ -260,11 +262,13 @@ export class DemoAIProvider implements IAIProvider {
         detectedPattern: `${wasteIssues.length} waste overflow complaints clustered near vendor stalls. Secondary overflow occurs within 12 hours of clearance.`,
         recommendation: 'Deploy an additional 4.5 cubic meter compactor bin and adjust sanitation pickup frequency to twice daily (06:00 and 19:00).',
         priority: 'Medium',
+        department: 'Sanitation Department',
         suggestedDepartment: 'Sanitation Department',
-        location: wasteIssues[0].location.address || 'Market Stalls Sector',
+        location: wasteIssues[0].location.district || wasteIssues[0].location.address || 'Market Stalls Sector',
         relatedComplaintIds: wasteIssues.map((c) => c.id).slice(0, 5),
         potentialCauseHypothesis: 'Underestimated vendor biowaste volume during weekend trading peaks.',
         estimatedImpact: 'Eliminates public health risks and restores sidewalk accessibility.',
+        disclaimer: 'AI-generated hypothesis — requires administrative validation.',
       });
     }
 
@@ -276,11 +280,13 @@ export class DemoAIProvider implements IAIProvider {
         detectedPattern: 'Recurring water pooling without direct precipitation indicates mainline pressurized joint breach.',
         recommendation: 'Perform acoustic leak detection and pressure throttling along the primary distribution feeder line.',
         priority: 'High',
+        department: 'Water Supply Department',
         suggestedDepartment: 'Water Supply Department',
-        location: waterIssues[0].location.address || 'Hospital Road Utility Corridor',
+        location: waterIssues[0].location.district || waterIssues[0].location.address || 'Hospital Road Utility Corridor',
         relatedComplaintIds: waterIssues.map((c) => c.id).slice(0, 3),
         potentialCauseHypothesis: 'Aging ductile iron pipeline joint seal failure under elevated morning booster pump pressure.',
         estimatedImpact: 'Conserves potable water and prevents pavement structural undermining.',
+        disclaimer: 'AI-generated hypothesis — requires administrative validation.',
       });
     }
 

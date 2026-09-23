@@ -26,7 +26,7 @@ const DEPARTMENT_CREWS: Record<DepartmentName, string[]> = {
   'Public Works Department': [
     'PWD Rapid Asphalt Patch Unit 2',
     'Road & Pavement Maintenance Crew A',
-    'Inspector J. Martinez (Unit 4)',
+    'Demo Municipal Officer (Zone Operations)',
   ],
   'Sanitation Department': [
     'Sanitation Waste Hauler Route 7',

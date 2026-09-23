@@ -30,11 +30,13 @@ export interface AIInsightPattern {
   detectedPattern: string;
   recommendation: string;
   priority: PriorityLevel;
+  department: DepartmentName;
   suggestedDepartment: DepartmentName;
   location: string;
   relatedComplaintIds: string[];
   potentialCauseHypothesis: string;
   estimatedImpact: string;
+  disclaimer?: string;
 }
 
 export interface IAIProvider {

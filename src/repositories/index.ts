@@ -1,10 +1,10 @@
 import {
-  LocalStorageComplaintRepository,
-  LocalStorageAuthRepository,
-  LocalStorageHotspotRepository,
-  LocalStorageNotificationRepository,
-  LocalStorageInsightRepository,
-} from './local/LocalStorageRepositories';
+  FirebaseComplaintRepository,
+  FirebaseAuthRepository,
+  FirebaseHotspotRepository,
+  FirebaseNotificationRepository,
+  FirebaseInsightRepository,
+} from './firebase/FirebaseRepositories';
 import {
   IComplaintRepository,
   IAuthRepository,
@@ -13,26 +13,27 @@ import {
   IInsightRepository,
 } from './types';
 
-// Instantiate default LocalStorage repositories
-const localComplaintRepo = new LocalStorageComplaintRepository();
-const localAuthRepo = new LocalStorageAuthRepository();
-const localHotspotRepo = new LocalStorageHotspotRepository();
-const localNotificationRepo = new LocalStorageNotificationRepository();
-const localInsightRepo = new LocalStorageInsightRepository();
+// Instantiate default Firebase-backed repositories
+const firebaseComplaintRepo = new FirebaseComplaintRepository();
+const firebaseAuthRepo = new FirebaseAuthRepository();
+const firebaseHotspotRepo = new FirebaseHotspotRepository();
+const firebaseNotificationRepo = new FirebaseNotificationRepository();
+const firebaseInsightRepo = new FirebaseInsightRepository();
 
 /**
  * Repository Registry
- * Supplies repositories to application services.
- * Swap implementation here to transition between LocalStorage and Supabase/PostgreSQL.
+ * Supplies active repositories to application services.
+ * Now backed by Google Cloud Firebase (Firestore & Auth).
  */
 export const repositories = {
-  complaints: localComplaintRepo as IComplaintRepository,
-  auth: localAuthRepo as IAuthRepository,
-  hotspots: localHotspotRepo as IHotspotRepository,
-  notifications: localNotificationRepo as INotificationRepository,
-  insights: localInsightRepo as IInsightRepository,
+  complaints: firebaseComplaintRepo as IComplaintRepository,
+  auth: firebaseAuthRepo as IAuthRepository,
+  hotspots: firebaseHotspotRepo as IHotspotRepository,
+  notifications: firebaseNotificationRepo as INotificationRepository,
+  insights: firebaseInsightRepo as IInsightRepository,
 };
 
 export * from './types';
 export * from './local/LocalStorageRepositories';
+export * from './firebase/FirebaseRepositories';
 export * from './supabase/SupabaseAdapters';

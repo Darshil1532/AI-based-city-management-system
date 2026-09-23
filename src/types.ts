@@ -36,6 +36,9 @@ export interface TimelineEvent {
   title: string;
   description: string;
   actor: string;
+  previousStatus?: ComplaintStatus;
+  newStatus?: ComplaintStatus;
+  note?: string;
   badgeType?: 'system' | 'ai' | 'admin' | 'department' | 'citizen';
 }
 
