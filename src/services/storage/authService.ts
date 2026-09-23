@@ -41,8 +41,8 @@ export class AuthService implements IAuthService {
   private repository: IAuthRepository;
   private user: UserProfile;
 
-  constructor(repository: IAuthRepository = repositories.auth) {
-    this.repository = repository;
+  constructor(repository?: IAuthRepository) {
+    this.repository = repository || repositories.auth;
     this.user = this.repository.getCurrentUser();
   }
 

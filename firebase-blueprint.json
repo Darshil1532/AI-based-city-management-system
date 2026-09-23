@@ -54,6 +54,31 @@
         "type": { "type": "string" }
       },
       "required": ["id", "userId", "title", "message", "timestamp", "read", "type"]
+    },
+    "hotspot": {
+      "title": "Municipal Geographic Hotspot",
+      "description": "Clustered civic issues identifying geographic infrastructure bottlenecks",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "category": { "type": "string" },
+        "count": { "type": "number" },
+        "severity": { "type": "string" },
+        "location": { "type": "string" },
+        "coordinates": { "type": "object" }
+      },
+      "required": ["id", "category", "count", "severity", "location"]
+    },
+    "admin": {
+      "title": "Municipal Administrator Role",
+      "description": "Authorized municipal officer credentials and RBAC clearance",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string" }
+      },
+      "required": ["uid", "email", "role"]
     }
   },
   "firestore": {
@@ -68,6 +93,14 @@
     "/notifications/{notificationId}": {
       "schema": "notification",
       "description": "Civic notifications for municipal users"
+    },
+    "/hotspots/{hotspotId}": {
+      "schema": "hotspot",
+      "description": "Geographic issue clusters across municipal sectors"
+    },
+    "/admins/{adminUid}": {
+      "schema": "admin",
+      "description": "Authorized municipal administration accounts"
     }
   }
 }

@@ -22,6 +22,7 @@ import { departmentService } from '../services/storage/departmentService';
 import { globalSearchService, SearchDatabaseOptions } from '../services/storage/globalSearchService';
 import { authService, DEMO_CITIZEN, DEMO_ADMIN } from '../services/storage/authService';
 import { aiService } from '../services/ai/AIService';
+import { civicApiClient } from '../services/api/civicApiClient';
 import { GlobalSearchResults } from '../types';
 import { useAuth } from './AuthContext';
 
@@ -197,6 +198,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   }, []);
 
+  // Fetch authoritative complaints feed from Express backend
+  useEffect(() => {
+    civicApiClient
+      .getAllComplaints()
+      .then((data) => {
+        if (data?.complaints && Array.isArray(data.complaints) && data.complaints.length > 0) {
+          complaintService.saveAll(data.complaints);
+          setAllComplaintsList(data.complaints);
+        }
+      })
+      .catch((err) => {
+        console.warn('[AppContext] Civic backend sync notice:', err?.message || err);
+      });
+  }, [currentUser.id, currentUser.role]);
+
   // Notifications mapped to current user
   const [notificationsList, setNotificationsList] = useState<NotificationItem[]>(() =>
     notificationService.getForUser(currentUser.id, currentUser.role)
@@ -310,7 +326,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       aiCategory: aiAnalysis.category,
       aiPriority: aiAnalysis.priority,
       aiDepartment: aiAnalysis.department,
-      aiConfidence: aiAnalysis.confidence ?? 0.88,
+      aiConfidence: aiAnalysis.confidence,
       aiReasoning: aiAnalysis.reasoning,
       aiFactors: aiAnalysis.factors,
       aiProvider: aiAnalysis.provider,
@@ -347,8 +363,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           status: 'submitted',
           timestamp: new Date(Date.now() + 500).toISOString(),
           title: 'AI Decision-Support Recommendation Generated',
-          description: `AI triage analyzed report: Recommended Category "${aiAnalysis.category}", Priority "${aiAnalysis.priority}", Department "${aiAnalysis.department}" (Confidence: ${aiAnalysis.confidencePercent}%). Human administrative validation pending.`,
-          actor: aiAnalysis.providerLabel || 'Demo AI',
+          description: `AI triage analyzed report: Recommended Category "${aiAnalysis.category}", Priority "${aiAnalysis.priority}", Department "${aiAnalysis.department}"${aiAnalysis.confidence !== undefined ? ` (Confidence: ${(aiAnalysis.confidence * 100).toFixed(0)}%)` : ' (Fallback decision support)'}. Human administrative validation pending.`,
+          actor: aiAnalysis.providerLabel || (aiAnalysis.provider === 'Gemini' ? 'Gemini 3.1 Flash Lite' : 'Demo AI'),
           badgeType: 'ai',
         },
       ],
@@ -358,6 +374,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updatedAll = complaintService.getAll();
     setAllComplaintsList(updatedAll);
     setLastSubmittedComplaint(saved);
+
+    // Persist via Express authoritative civic API
+    civicApiClient
+      .createComplaint({
+        title: newComplaint.title,
+        description: data.description,
+        category: data.category,
+        severity: data.severity,
+        priority: aiAnalysis.priority,
+        location: data.location,
+        aiAnalysis: {
+          category: aiAnalysis.category,
+          priority: aiAnalysis.priority,
+          department: aiAnalysis.department,
+          confidence: aiAnalysis.confidence,
+          reasoning: aiAnalysis.reasoning,
+          factors: aiAnalysis.factors,
+          provider: aiAnalysis.provider,
+          providerLabel: aiAnalysis.providerLabel,
+        },
+      })
+      .then((res) => {
+        if (res?.complaint) {
+          complaintService.update(newId, res.complaint);
+          setAllComplaintsList(complaintService.getAll());
+        }
+      })
+      .catch((err) => {
+        console.warn('[AppContext] Civic backend intake sync notice:', err);
+      });
 
     // Dynamically run DBSCAN hotspot clustering
     const updatedHotspots = hotspotService.detectClusters(updatedAll);
@@ -459,6 +505,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (updated) {
       setAllComplaintsList(complaintService.getAll());
 
+      civicApiClient
+        .reviewAIRecommendation(id, {
+          decision: 'ratified',
+          notes: adminNotes,
+        })
+        .catch((err) => console.warn('[AppContext] Ratify backend sync notice:', err));
+
       // Citizen notification
       notificationService.add({
         userId: existing.citizenId,
@@ -533,6 +586,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (updated) {
       setAllComplaintsList(complaintService.getAll());
+
+      civicApiClient
+        .reviewAIRecommendation(id, {
+          decision: 'overridden',
+          finalCategory: category,
+          finalPriority: priority,
+          assignedDepartment: department,
+          notes: overrides.notes,
+        })
+        .then(() => {
+          if (overrides.officer) {
+            return civicApiClient.assignDepartment(id, {
+              department: department || 'Public Works Department',
+              officer: overrides.officer,
+              notes: overrides.notes,
+            });
+          }
+        })
+        .catch((err) => console.warn('[AppContext] Override backend sync notice:', err));
 
       // Notify citizen
       notificationService.add({
@@ -708,6 +780,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
 
         refreshNotifications();
+
+        // Authoritative civic backend synchronization
+        if (isResolved) {
+          civicApiClient
+            .resolveComplaint(id, {
+              resolutionDetails: updates.resolutionDetails || auditNote || 'Municipal field repair inspected and officially verified by site supervisor.',
+              officerSignature: updates.assignedOfficer || currentUser.name,
+              overrideRationale: auditNote,
+            })
+            .catch((err) => console.warn('[AppContext] Resolve backend sync notice:', err));
+        } else {
+          civicApiClient
+            .updateStatus(id, {
+              status: updates.status,
+              notes: updates.adminNotes || auditNote,
+              overrideRationale: auditNote,
+            })
+            .catch((err) => console.warn('[AppContext] UpdateStatus backend sync notice:', err));
+        }
       }
     }
   };

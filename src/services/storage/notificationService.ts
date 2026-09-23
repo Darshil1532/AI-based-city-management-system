@@ -15,8 +15,8 @@ export class NotificationService implements INotificationService {
   private repository: INotificationRepository;
   private notifications: NotificationItem[] = [];
 
-  constructor(repository: INotificationRepository = repositories.notifications) {
-    this.repository = repository;
+  constructor(repository?: INotificationRepository) {
+    this.repository = repository || repositories.notifications;
     this.notifications = this.repository.getAll();
   }
 

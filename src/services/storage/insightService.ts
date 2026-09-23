@@ -15,8 +15,8 @@ export class InsightService implements IInsightService {
   private repository: IInsightRepository;
   private insights: AIInsight[] = [];
 
-  constructor(repository: IInsightRepository = repositories.insights) {
-    this.repository = repository;
+  constructor(repository?: IInsightRepository) {
+    this.repository = repository || repositories.insights;
     this.insights = this.repository.getAll();
   }
 

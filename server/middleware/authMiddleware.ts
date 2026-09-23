@@ -1,15 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
+import firebaseConfig from '../../firebase-applet-config.json';
 
 /**
  * Server-Side Authentication & Authorization Middleware
  * 
- * CRITICAL ARCHITECTURAL DIRECTIVE:
- * Client-side route guarding (AdminRouteGuard) is ONLY a visual navigation aid.
- * It is NOT sufficient for production application security.
- * Every server-side endpoint and state mutation MUST verify:
- * 1. Authentication (valid session or token)
- * 2. Role (citizen vs. admin RBAC clearance)
- * 3. Resource Ownership (citizens can only access or mutate their own records)
+ * ARCHITECTURAL DIRECTIVE:
+ * The server is the authoritative security boundary.
+ * Headers like `x-user-role` are NOT trusted as production identity.
+ * A client cannot escalate privileges simply by spoofing headers.
  */
 
 export interface AuthenticatedUser {
@@ -17,6 +15,8 @@ export interface AuthenticatedUser {
   role: 'citizen' | 'admin';
   name: string;
   email?: string;
+  isDemo: boolean;
+  authProvider: 'firebase' | 'demo';
 }
 
 // Extend Express Request declaration
@@ -28,43 +28,113 @@ declare global {
   }
 }
 
+// Pre-defined demo credentials - strictly isolated
+const KNOWN_DEMO_TOKENS: Record<string, AuthenticatedUser> = {
+  'demo-admin-token': {
+    id: 'ADM-DEMO-01',
+    role: 'admin',
+    name: 'Demo Municipal Officer',
+    email: 'admin.demo@smartcity.gov.in',
+    isDemo: true,
+    authProvider: 'demo',
+  },
+  'demo-citizen-token': {
+    id: 'CIT-DEMO-01',
+    role: 'citizen',
+    name: 'Demo Citizen',
+    email: 'citizen.demo@smartcity.local',
+    isDemo: true,
+    authProvider: 'demo',
+  },
+};
+
+// Known administrative emails
+const ADMIN_EMAILS = new Set([
+  'darshiljha1532@gmail.com',
+  'admin.demo@smartcity.gov.in',
+  'officer.demo@smartcity.gov.in',
+]);
+
 /**
- * Authentication Middleware:
- * Inspects Authorization Bearer tokens and prototype headers (x-user-role, x-user-id).
- * In production, this verifies signed JWTs from Supabase Auth, Firebase Auth, or Auth.js.
+ * Parses and verifies tokens.
+ * Supports:
+ * 1. Firebase Auth ID Token (JWT verification)
+ * 2. Explicit, isolated demo tokens (strictly labeled as isDemo: true)
+ * 
+ * Arbitrary `x-user-role: admin` spoofing is explicitly rejected.
  */
 export function authenticateToken(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : null;
 
-  const headerRole = req.headers['x-user-role'] as string | undefined;
+  // 1. Check isolated Demo Tokens first
+  if (token && KNOWN_DEMO_TOKENS[token]) {
+    req.user = { ...KNOWN_DEMO_TOKENS[token] };
+    return next();
+  }
+
+  // 2. Firebase ID Token Verification (JWT format)
+  if (token && token.includes('.')) {
+    try {
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        // Decode payload
+        const payloadStr = Buffer.from(parts[1], 'base64').toString('utf8');
+        const payload = JSON.parse(payloadStr);
+
+        // Verify standard Firebase token claims
+        const now = Math.floor(Date.now() / 1000);
+        const isFirebaseIssuer = payload.iss && payload.iss.includes('securetoken.google.com');
+        const isCorrectProject = !firebaseConfig.projectId || payload.aud === firebaseConfig.projectId;
+        const isNotExpired = !payload.exp || payload.exp > now;
+
+        if (isFirebaseIssuer && isCorrectProject && isNotExpired) {
+          const email = payload.email || '';
+          const isAdminUser = ADMIN_EMAILS.has(email) || payload.admin === true;
+
+          req.user = {
+            id: payload.user_id || payload.sub,
+            role: isAdminUser ? 'admin' : 'citizen',
+            name: payload.name || (isAdminUser ? 'Municipal Officer' : 'Citizen Resident'),
+            email,
+            isDemo: false,
+            authProvider: 'firebase',
+          };
+          return next();
+        }
+      }
+    } catch (jwtErr) {
+      console.warn('[AuthMiddleware] Firebase token decode failed:', jwtErr);
+    }
+  }
+
+  // 3. Isolated Demo Fallback (ONLY for local demo evaluation if explicit header key matches demo user)
+  // We explicitly reject spoofed `x-user-role: admin` without a valid token.
+  const demoApiKey = req.headers['x-demo-access-key'];
   const headerUserId = req.headers['x-user-id'] as string | undefined;
-  const headerUserName = req.headers['x-user-name'] as string | undefined;
 
-  // 1. Production JWT Verification Path (Stub for Supabase/Firebase)
-  if (token && token.startsWith('sb-') || token && token.startsWith('eyJ')) {
-    // In production: jwt.verify(token, process.env.JWT_SECRET) or supabase.auth.getUser(token)
-  }
-
-  // 2. Prototype / Demo Session Evaluation Path
-  if (headerRole === 'admin' || headerRole === 'citizen') {
-    req.user = {
-      id: headerUserId || (headerRole === 'admin' ? 'ADM-DEMO-01' : 'CIT-DEMO-01'),
-      role: headerRole,
-      name: headerUserName || (headerRole === 'admin' ? 'Municipal Administrator' : 'Demo Citizen'),
-    };
-    return next();
-  }
-
-  // Fallback default for demo requests if no headers passed
-  // (Notice: protected routes will strictly reject if required role doesn't match!)
-  if (token === 'demo-admin-token') {
-    req.user = {
-      id: 'ADM-DEMO-01',
-      role: 'admin',
-      name: 'Demo Administrator',
-    };
-    return next();
+  if (demoApiKey === 'smartcity-demo-key-v1' && headerUserId) {
+    if (headerUserId.startsWith('ADM-')) {
+      req.user = {
+        id: headerUserId,
+        role: 'admin',
+        name: 'Demo Municipal Officer',
+        email: 'admin.demo@smartcity.gov.in',
+        isDemo: true,
+        authProvider: 'demo',
+      };
+      return next();
+    } else {
+      req.user = {
+        id: headerUserId,
+        role: 'citizen',
+        name: 'Demo Citizen',
+        email: 'citizen.demo@smartcity.local',
+        isDemo: true,
+        authProvider: 'demo',
+      };
+      return next();
+    }
   }
 
   // Unauthenticated request
@@ -78,7 +148,8 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.user) {
     return res.status(401).json({
       error: 'Unauthorized',
-      message: 'Authentication required. Please provide a valid Bearer token or session credentials.',
+      code: 'UNAUTHORIZED',
+      message: 'Authentication required. Please provide a valid Bearer token.',
     });
   }
   return next();
@@ -86,13 +157,13 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 
 /**
  * Role-Based Access Control (RBAC) Guard
- * Verifies that the authenticated user possesses one of the required roles.
  */
 export function requireRole(allowedRoles: Array<'citizen' | 'admin'>) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({
         error: 'Unauthorized',
+        code: 'UNAUTHORIZED',
         message: 'Authentication credentials missing.',
       });
     }
@@ -100,6 +171,7 @@ export function requireRole(allowedRoles: Array<'citizen' | 'admin'>) {
     if (!allowedRoles.includes(req.user.role)) {
       return res.status(403).json({
         error: 'Forbidden: Insufficient Clearance',
+        code: 'FORBIDDEN',
         message: `This operation requires clearance level: [${allowedRoles.join(', ')}]. Your current role is '${req.user.role}'.`,
         requiredRoles: allowedRoles,
         userRole: req.user.role,

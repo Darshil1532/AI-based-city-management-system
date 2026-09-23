@@ -2,6 +2,27 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Default deny catch-all security net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helper primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (request.auth.token.email != null && request.auth.token.email == 'darshiljha1532@gmail.com')
+      );
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
     function isValidId(id) {
       return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
@@ -16,23 +37,57 @@ service cloud.firestore {
 
     // Civic complaints collection
     match /complaints/{complaintId} {
-      allow read: if isValidId(complaintId);
+      // Read access: Citizens only access their own complaint data; administrators have full access
+      allow get: if isValidId(complaintId) && (isAdmin() || (isSignedIn() && existing().citizenId == request.auth.uid));
+      allow list: if isSignedIn() && (isAdmin() || resource.data.citizenId == request.auth.uid);
+
+      // Create: Authenticated citizens can submit complaints.
+      // Strictly enforces schema and prohibits citizens from setting administrative overrides, resolutions, or audit timelines.
       allow create: if isValidId(complaintId)
+                    && isSignedIn()
+                    && (isAdmin() || incoming().citizenId == request.auth.uid)
                     && incoming().keys().hasAll(['id', 'category', 'severity', 'status', 'title', 'description', 'createdAt'])
                     && incoming().id is string
                     && incoming().category is string
                     && incoming().severity is string
-                    && incoming().status is string
+                    && (isAdmin() || incoming().status == 'submitted')
+                    && (isAdmin() || !incoming().keys().hasAny(['finalCategory', 'finalPriority', 'assignedDepartment', 'reviewDecision', 'reviewedBy', 'reviewedAt', 'resolutionDetails', 'resolvedBy', 'timeline']))
                     && incoming().title is string && incoming().title.size() <= 500
                     && incoming().description is string && incoming().description.size() <= 4000;
-      allow update: if isValidId(complaintId);
+
+      // Update: Tiered permission logic
+      // Tier 1 (Admin): Can update triage, lifecycle status, review decisions, notes, and resolutions
+      // Tier 2 (Citizen / Owner): Cannot modify administrative triage, review decisions, resolutions, status, or timeline
+      allow update: if isValidId(complaintId) && isSignedIn() && (
+        isAdmin() ||
+        (
+          existing().citizenId == request.auth.uid
+          && incoming().status == existing().status
+          && !incoming().diff(existing()).affectedKeys().hasAny([
+            'finalCategory',
+            'finalPriority',
+            'assignedDepartment',
+            'reviewDecision',
+            'reviewedBy',
+            'reviewedAt',
+            'resolutionDetails',
+            'resolvedBy',
+            'timeline',
+            'status'
+          ])
+        )
+      );
+
+      // Deletions strictly forbidden to maintain immutable municipal audit trail
       allow delete: if false;
     }
 
-    // AI Insights collection
+    // AI Insights collection (Systemic cross-issue municipal intelligence)
     match /insights/{insightId} {
-      allow read: if isValidId(insightId);
+      allow get: if isValidId(insightId) && isSignedIn();
+      allow list: if isSignedIn();
       allow create, update: if isValidId(insightId)
+                            && isAdmin()
                             && incoming().keys().hasAll(['id', 'title', 'detectedPattern', 'recommendation', 'status'])
                             && incoming().id is string
                             && incoming().title is string && incoming().title.size() <= 300
@@ -41,19 +96,35 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Notifications collection
+    // Civic notifications collection
     match /notifications/{notificationId} {
-      allow read: if isValidId(notificationId);
-      allow create, update: if isValidId(notificationId)
-                            && incoming().keys().hasAll(['id', 'userId', 'title', 'message', 'timestamp', 'read', 'type'])
-                            && incoming().title is string && incoming().title.size() <= 300
-                            && incoming().message is string && incoming().message.size() <= 1500;
+      allow get: if isValidId(notificationId) && isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isValidId(notificationId)
+                    && isSignedIn()
+                    && incoming().keys().hasAll(['id', 'userId', 'title', 'message', 'timestamp', 'read', 'type'])
+                    && incoming().id is string
+                    && incoming().title is string && incoming().title.size() <= 300
+                    && incoming().message is string && incoming().message.size() <= 1500;
+      allow update: if isValidId(notificationId)
+                    && isSignedIn()
+                    && (existing().userId == request.auth.uid || isAdmin())
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['read', 'updatedAt']);
       allow delete: if false;
     }
 
-    // Test connectivity document
-    match /test/{docId} {
-      allow read, write: if true;
+    // Hotspots collection (Municipal geographic clusters)
+    match /hotspots/{hotspotId} {
+      allow get: if isValidId(hotspotId) && isSignedIn();
+      allow list: if isSignedIn();
+      allow create, update: if isValidId(hotspotId) && isAdmin();
+      allow delete: if false;
+    }
+
+    // Admins registry (Read-only for authorized clients to verify status)
+    match /admins/{adminUid} {
+      allow read: if isValidId(adminUid) && isSignedIn();
+      allow write: if false;
     }
   }
 }

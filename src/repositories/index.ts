@@ -13,24 +13,44 @@ import {
   IInsightRepository,
 } from './types';
 
-// Instantiate default Firebase-backed repositories
-const firebaseComplaintRepo = new FirebaseComplaintRepository();
-const firebaseAuthRepo = new FirebaseAuthRepository();
-const firebaseHotspotRepo = new FirebaseHotspotRepository();
-const firebaseNotificationRepo = new FirebaseNotificationRepository();
-const firebaseInsightRepo = new FirebaseInsightRepository();
+// Default instances
+let firebaseComplaintRepo: IComplaintRepository | null = null;
+let firebaseAuthRepo: IAuthRepository | null = null;
+let firebaseHotspotRepo: IHotspotRepository | null = null;
+let firebaseNotificationRepo: INotificationRepository | null = null;
+let firebaseInsightRepo: IInsightRepository | null = null;
 
-/**
- * Repository Registry
- * Supplies active repositories to application services.
- * Now backed by Google Cloud Firebase (Firestore & Auth).
- */
 export const repositories = {
-  complaints: firebaseComplaintRepo as IComplaintRepository,
-  auth: firebaseAuthRepo as IAuthRepository,
-  hotspots: firebaseHotspotRepo as IHotspotRepository,
-  notifications: firebaseNotificationRepo as INotificationRepository,
-  insights: firebaseInsightRepo as IInsightRepository,
+  get complaints(): IComplaintRepository {
+    if (!firebaseComplaintRepo) {
+      firebaseComplaintRepo = new FirebaseComplaintRepository();
+    }
+    return firebaseComplaintRepo;
+  },
+  get auth(): IAuthRepository {
+    if (!firebaseAuthRepo) {
+      firebaseAuthRepo = new FirebaseAuthRepository();
+    }
+    return firebaseAuthRepo;
+  },
+  get hotspots(): IHotspotRepository {
+    if (!firebaseHotspotRepo) {
+      firebaseHotspotRepo = new FirebaseHotspotRepository();
+    }
+    return firebaseHotspotRepo;
+  },
+  get notifications(): INotificationRepository {
+    if (!firebaseNotificationRepo) {
+      firebaseNotificationRepo = new FirebaseNotificationRepository();
+    }
+    return firebaseNotificationRepo;
+  },
+  get insights(): IInsightRepository {
+    if (!firebaseInsightRepo) {
+      firebaseInsightRepo = new FirebaseInsightRepository();
+    }
+    return firebaseInsightRepo;
+  },
 };
 
 export * from './types';

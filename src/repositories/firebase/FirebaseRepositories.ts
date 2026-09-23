@@ -5,7 +5,7 @@ import {
   getDocs,
   onSnapshot,
 } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../../lib/firebase';
 import {
   IComplaintRepository,
   IInsightRepository,
@@ -60,7 +60,7 @@ function sanitizeForFirestore<T extends Record<string, any>>(obj: T): Record<str
  */
 export class FirebaseComplaintRepository implements IComplaintRepository {
   private complaints: Complaint[] = [];
-  private unsubscribe?: () => void;
+  private unsubscribe?: (() => void) | null;
 
   constructor() {
     this.loadInitialCache();
@@ -90,7 +90,51 @@ export class FirebaseComplaintRepository implements IComplaintRepository {
 
   private async initFirebaseSync(): Promise<void> {
     try {
-      // Real-time listener for remote updates
+      // Sync from authoritative civic API backend
+      if (typeof window !== 'undefined' && typeof fetch !== 'undefined') {
+        fetch('/api/complaints')
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (data?.complaints && Array.isArray(data.complaints)) {
+              const remoteMap = new Map<string, Complaint>();
+              data.complaints.forEach((c: Complaint) => remoteMap.set(c.id, c));
+              const merged = [...data.complaints];
+              this.complaints.forEach((local) => {
+                if (!remoteMap.has(local.id)) {
+                  merged.push(local);
+                }
+              });
+              merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+              this.complaints = merged;
+              this.persistCache();
+            }
+          })
+          .catch((err) => {
+            console.warn('[FirebaseComplaintRepository] Authoritative API sync notice:', err?.message || err);
+          });
+      }
+
+      // Real-time listener when user is authenticated
+      if (auth.currentUser) {
+        this.subscribeToFirestore();
+      }
+
+      auth.onAuthStateChanged((user) => {
+        if (user) {
+          this.subscribeToFirestore();
+        } else if (this.unsubscribe) {
+          this.unsubscribe();
+          this.unsubscribe = null;
+        }
+      });
+    } catch (err) {
+      console.warn('[FirebaseComplaintRepository] Firestore sync init notice:', err);
+    }
+  }
+
+  private subscribeToFirestore(): void {
+    if (this.unsubscribe) return;
+    try {
       this.unsubscribe = onSnapshot(
         collection(db, 'complaints'),
         (snapshot) => {
@@ -99,11 +143,9 @@ export class FirebaseComplaintRepository implements IComplaintRepository {
             snapshot.forEach((docSnap) => {
               remoteComplaints.push(docSnap.data() as Complaint);
             });
-            // Merge remote with initial default if not already present
             const remoteMap = new Map<string, Complaint>();
             remoteComplaints.forEach((c) => remoteMap.set(c.id, c));
             
-            // Maintain complaints sorted by createdAt desc
             const merged = [...remoteComplaints];
             this.complaints.forEach((local) => {
               if (!remoteMap.has(local.id)) {
@@ -114,7 +156,6 @@ export class FirebaseComplaintRepository implements IComplaintRepository {
             this.complaints = merged;
             this.persistCache();
           } else {
-            // First time seeding to Firestore
             this.seedToFirestore();
           }
         },
@@ -123,16 +164,23 @@ export class FirebaseComplaintRepository implements IComplaintRepository {
         }
       );
     } catch (err) {
-      console.warn('[FirebaseComplaintRepository] Firestore sync init notice:', err);
+      console.warn('[FirebaseComplaintRepository] Firestore subscription notice:', err);
     }
   }
 
   private async seedToFirestore(): Promise<void> {
     try {
+      // Only seed initial records if authenticated as admin or authorized user
+      if (!auth.currentUser) {
+        return;
+      }
       for (const complaint of INITIAL_COMPLAINTS.slice(0, 5)) {
         await setDoc(doc(db, 'complaints', complaint.id), sanitizeForFirestore(complaint), { merge: true });
       }
     } catch (err) {
+      if ((err as any)?.code === 'permission-denied') {
+        handleFirestoreError(err, OperationType.WRITE, 'complaints');
+      }
       console.info('[FirebaseComplaintRepository] Background seed notice:', err);
     }
   }
@@ -155,7 +203,12 @@ export class FirebaseComplaintRepository implements IComplaintRepository {
 
     // Async write to Firestore
     setDoc(doc(db, 'complaints', complaint.id), sanitizeForFirestore(complaint))
-      .catch((err) => console.warn('[Firebase] Complaint sync error:', err));
+      .catch((err) => {
+        if (err?.code === 'permission-denied') {
+          handleFirestoreError(err, OperationType.CREATE, `complaints/${complaint.id}`);
+        }
+        console.warn('[Firebase] Complaint sync error:', err);
+      });
 
     return complaint;
   }
@@ -173,7 +226,12 @@ export class FirebaseComplaintRepository implements IComplaintRepository {
 
     // Async update to Firestore
     setDoc(doc(db, 'complaints', id), sanitizeForFirestore(updates), { merge: true })
-      .catch((err) => console.warn('[Firebase] Complaint update sync error:', err));
+      .catch((err) => {
+        if (err?.code === 'permission-denied') {
+          handleFirestoreError(err, OperationType.UPDATE, `complaints/${id}`);
+        }
+        console.warn('[Firebase] Complaint update sync error:', err);
+      });
 
     return this.complaints[idx];
   }
@@ -222,9 +280,30 @@ export class FirebaseInsightRepository implements IInsightRepository {
     }
   }
 
+  private unsubscribe: (() => void) | null = null;
+
   private initFirebaseSync(): void {
     try {
-      onSnapshot(
+      if (auth.currentUser) {
+        this.subscribeToFirestore();
+      }
+      auth.onAuthStateChanged((user) => {
+        if (user) {
+          this.subscribeToFirestore();
+        } else if (this.unsubscribe) {
+          this.unsubscribe();
+          this.unsubscribe = null;
+        }
+      });
+    } catch {
+      // Fallback
+    }
+  }
+
+  private subscribeToFirestore(): void {
+    if (this.unsubscribe) return;
+    try {
+      this.unsubscribe = onSnapshot(
         collection(db, 'insights'),
         (snapshot) => {
           if (!snapshot.empty) {
@@ -234,8 +313,8 @@ export class FirebaseInsightRepository implements IInsightRepository {
             this.persistCache();
           }
         },
-        () => {
-          // Fallback gracefully
+        (error) => {
+          console.warn('[FirebaseInsightRepository] Listener notice:', error.message);
         }
       );
     } catch {
@@ -255,7 +334,11 @@ export class FirebaseInsightRepository implements IInsightRepository {
     this.insights.unshift(insight);
     this.persistCache();
     setDoc(doc(db, 'insights', insight.id), sanitizeForFirestore(insight))
-      .catch(() => {});
+      .catch((err) => {
+        if (err?.code === 'permission-denied') {
+          handleFirestoreError(err, OperationType.CREATE, `insights/${insight.id}`);
+        }
+      });
     return insight;
   }
 
@@ -265,7 +348,11 @@ export class FirebaseInsightRepository implements IInsightRepository {
     this.insights[idx] = { ...this.insights[idx], ...updates };
     this.persistCache();
     setDoc(doc(db, 'insights', id), sanitizeForFirestore(updates), { merge: true })
-      .catch(() => {});
+      .catch((err) => {
+        if (err?.code === 'permission-denied') {
+          handleFirestoreError(err, OperationType.UPDATE, `insights/${id}`);
+        }
+      });
     return this.insights[idx];
   }
 
@@ -313,9 +400,30 @@ export class FirebaseNotificationRepository implements INotificationRepository {
     }
   }
 
+  private unsubscribe: (() => void) | null = null;
+
   private initFirebaseSync(): void {
     try {
-      onSnapshot(
+      if (auth.currentUser) {
+        this.subscribeToFirestore();
+      }
+      auth.onAuthStateChanged((user) => {
+        if (user) {
+          this.subscribeToFirestore();
+        } else if (this.unsubscribe) {
+          this.unsubscribe();
+          this.unsubscribe = null;
+        }
+      });
+    } catch {
+      // Fallback
+    }
+  }
+
+  private subscribeToFirestore(): void {
+    if (this.unsubscribe) return;
+    try {
+      this.unsubscribe = onSnapshot(
         collection(db, 'notifications'),
         (snapshot) => {
           if (!snapshot.empty) {
@@ -325,7 +433,9 @@ export class FirebaseNotificationRepository implements INotificationRepository {
             this.persistCache();
           }
         },
-        () => {}
+        (error) => {
+          console.warn('[FirebaseNotificationRepository] Listener notice:', error.message);
+        }
       );
     } catch {
       // Fallback
@@ -345,7 +455,11 @@ export class FirebaseNotificationRepository implements INotificationRepository {
     this.notifications.unshift(notification);
     this.persistCache();
     setDoc(doc(db, 'notifications', notification.id), sanitizeForFirestore(notification))
-      .catch(() => {});
+      .catch((err) => {
+        if (err?.code === 'permission-denied') {
+          handleFirestoreError(err, OperationType.CREATE, `notifications/${notification.id}`);
+        }
+      });
     return notification;
   }
 

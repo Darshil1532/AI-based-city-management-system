@@ -12,6 +12,7 @@ export interface CreateComplaintApiPayload {
   title: string;
   description: string;
   category: string;
+  severity?: 'Low' | 'Medium' | 'High';
   priority?: 'Low' | 'Medium' | 'High';
   location: {
     latitude: number;
@@ -19,6 +20,16 @@ export interface CreateComplaintApiPayload {
     address: string;
     landmark?: string;
     district?: string;
+  };
+  aiAnalysis?: {
+    category: string;
+    priority: 'Low' | 'Medium' | 'High';
+    department: string;
+    confidence?: number;
+    reasoning: string;
+    factors: string[];
+    provider?: 'Gemini' | 'Demo AI';
+    providerLabel?: string;
   };
 }
 
@@ -39,12 +50,15 @@ export interface AssignDepartmentApiPayload {
 export interface UpdateStatusApiPayload {
   status: 'submitted' | 'assigned' | 'in_progress' | 'resolved';
   notes?: string;
+  overrideRationale?: string;
   resolutionDetails?: string;
+  officerSignature?: string;
 }
 
 export interface ResolveComplaintApiPayload {
   resolutionDetails: string;
   officerSignature?: string;
+  overrideRationale?: string;
 }
 
 export class CivicApiClient {
@@ -59,7 +73,18 @@ export class CivicApiClient {
     };
   }
 
-  // --- Citizen API Operations ---
+  // --- Citizen & Public API Operations ---
+
+  async getAllComplaints() {
+    const res = await fetch('/api/complaints', {
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Request failed' }));
+      throw new Error(err.message || err.error || 'Failed to fetch complaints feed');
+    }
+    return res.json();
+  }
 
   async createComplaint(payload: CreateComplaintApiPayload) {
     const res = await fetch('/api/complaints', {

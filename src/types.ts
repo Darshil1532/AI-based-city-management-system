@@ -71,7 +71,7 @@ export interface Complaint {
   aiCategory: ComplaintCategory;
   aiPriority: PriorityLevel;
   aiDepartment: DepartmentName;
-  aiConfidence: number;
+  aiConfidence?: number;
   aiReasoning: string;
   aiFactors: string[];
   aiProvider?: 'Gemini' | 'Demo AI';

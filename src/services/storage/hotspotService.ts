@@ -81,8 +81,8 @@ export class HotspotService implements IHotspotService {
   private repository: IHotspotRepository;
   private hotspots: Hotspot[] = [];
 
-  constructor(repository: IHotspotRepository = repositories.hotspots) {
-    this.repository = repository;
+  constructor(repository?: IHotspotRepository) {
+    this.repository = repository || repositories.hotspots;
     this.hotspots = this.repository.getAll();
   }
 

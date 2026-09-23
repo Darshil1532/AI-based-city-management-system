@@ -25,8 +25,8 @@ export class LocalComplaintService implements IComplaintService {
   private repository: IComplaintRepository;
   private complaints: Complaint[] = [];
 
-  constructor(repository: IComplaintRepository = repositories.complaints) {
-    this.repository = repository;
+  constructor(repository?: IComplaintRepository) {
+    this.repository = repository || repositories.complaints;
     this.complaints = this.repository.getAll();
   }
 
