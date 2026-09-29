@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
@@ -7,13 +7,10 @@ import {
   LocationCoordinates,
 } from '../../types';
 import { LocationPicker } from '../../components/maps/LocationPicker';
-import { AIAnalysisPanel } from '../../components/ai/AIAnalysisPanel';
-import { aiService } from '../../services/ai/AIService';
 import {
   Send,
   Upload,
   Image as ImageIcon,
-  Sparkles,
   HelpCircle,
   AlertCircle,
   CheckCircle2,
@@ -41,7 +38,7 @@ const SAMPLE_PHOTO_PREVIEWS = [
 
 export const ReportIssuePage: React.FC = () => {
   const navigate = useNavigate();
-  const { submitComplaint, complaints, currentUser, aiProviderType } = useApp();
+  const { submitComplaint, currentUser } = useApp();
 
   const [description, setDescription] = useState(
     'Large asphalt crater and trench forming near the main market entrance. Rainwater accumulates rapidly causing severe vehicle congestion and motorcycle skidding.'
@@ -70,20 +67,6 @@ export const ReportIssuePage: React.FC = () => {
     image?: string;
     general?: string;
   }>({});
-
-  // Debounced live heuristic preview to prevent excessive computation on rapid keystrokes
-  const [liveAIAnalysis, setLiveAIAnalysis] = useState(() =>
-    aiService.analyzeComplaintSync(description, category, severity, location, complaints)
-  );
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLiveAIAnalysis(
-        aiService.analyzeComplaintSync(description, category, severity, location, complaints)
-      );
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [description, category, severity, location, complaints]);
 
   const validateForm = (): boolean => {
     const errors: { description?: string; location?: string; image?: string } = {};
@@ -178,7 +161,7 @@ export const ReportIssuePage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-12">
+    <div className="space-y-6 max-w-3xl mx-auto pb-12">
       {/* Page Title */}
       <div>
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1 font-mono">
@@ -193,10 +176,7 @@ export const ReportIssuePage: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Form */}
-        <div className="lg:col-span-7 space-y-5">
-          <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200/80 shadow-2xs p-5 sm:p-6 space-y-5">
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200/80 shadow-2xs p-5 sm:p-6 space-y-5">
             {/* Category selection */}
             <div>
               <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 font-mono">
@@ -503,34 +483,5 @@ export const ReportIssuePage: React.FC = () => {
             </div>
           </form>
         </div>
-
-        {/* Right Column: Pre-Submission Heuristic Preview */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="sticky top-20 space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 font-mono">
-                <Sparkles className="w-4 h-4 text-amber-600" />
-                Pre-Submission Live Preview
-              </span>
-              <span className="text-[10px] text-amber-800 font-semibold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 font-mono">
-                Heuristic Match
-              </span>
-            </div>
-
-            {/* AI Panel */}
-            <AIAnalysisPanel analysis={liveAIAnalysis} />
-
-            <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200/70 text-xs text-slate-600 space-y-1.5">
-              <span className="font-bold text-slate-800 block text-xs">
-                Municipal AI Transparency Notice
-              </span>
-              <p className="text-[11px] leading-relaxed text-slate-500">
-                This real-time preview uses local heuristic rules to assist form completion. Official decision support will be processed by <strong className="text-slate-700">{aiProviderType === 'Gemini' ? 'Gemini 3.1 Flash Lite' : 'Demo AI'}</strong> upon submission. All final administrative triage decisions remain strictly with human municipal officers.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   );
 };
