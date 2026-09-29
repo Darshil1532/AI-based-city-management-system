@@ -352,7 +352,7 @@ export const DashboardCommandBar: React.FC<DashboardCommandBarProps> = ({
                               <PriorityBadge priority={c.priority} />
                             </div>
                             <p className="text-[11px] text-slate-500 truncate">
-                              {c.location.landmark || c.location.address} • {c.department}
+                              {c.location?.landmark || c.location?.address || 'Municipal Zone'} • {c.department}
                             </p>
                           </div>
                         </div>

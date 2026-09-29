@@ -423,6 +423,7 @@ export const SmartCityMap: React.FC<SmartCityMapProps> = ({
     if (!showIncidents) return;
 
     filteredComplaints.forEach((complaint) => {
+      if (!complaint.location?.latitude || !complaint.location?.longitude) return;
       const colors = CATEGORY_COLORS[complaint.category] || CATEGORY_COLORS['Pothole / Road'];
       const isUrgent = complaint.priority === 'High' && complaint.status !== 'resolved';
       const isSelected = selectedComplaintId === complaint.id;
@@ -505,7 +506,7 @@ export const SmartCityMap: React.FC<SmartCityMapProps> = ({
         
         <div style="font-size: 11px; color: #64748b; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 4px;">
           <span>📍</span>
-          <span>${escapeHtml(complaint.location.address || complaint.location.district || 'Municipal Sector')}</span>
+          <span>${escapeHtml(complaint.location?.address || complaint.location?.district || 'Municipal Sector')}</span>
         </div>
 
         <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 8px; border-top: 1px solid #f1f5f9; margin-top: 6px;">

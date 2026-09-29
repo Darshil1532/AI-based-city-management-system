@@ -226,7 +226,7 @@ export const CitizenDashboard: React.FC = () => {
                   </p>
                   <div className="flex items-center gap-2 text-[11px] text-slate-400 font-medium">
                     <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                    <span className="truncate">{c.location.landmark || c.location.address}</span>
+                    <span className="truncate">{c.location?.landmark || c.location?.address || 'City Sector'}</span>
                     <span>•</span>
                     <span>{new Date(c.createdAt).toLocaleDateString()}</span>
                   </div>

@@ -418,7 +418,7 @@ export const GlobalCommandBar: React.FC<GlobalCommandBarProps> = ({
                                   <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 flex-wrap">
                                     <span className="flex items-center gap-1 text-slate-600 truncate">
                                       <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                                      {c.location.landmark || c.location.address}
+                                      {c.location?.landmark || c.location?.address || 'City Sector'}
                                     </span>
                                     <span>•</span>
                                     <span className="text-slate-600 font-medium truncate">

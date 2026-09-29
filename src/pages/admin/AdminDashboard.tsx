@@ -79,8 +79,8 @@ export const AdminDashboard: React.FC = () => {
         c.description.toLowerCase().includes(q) ||
         (currentCategory && currentCategory.toLowerCase().includes(q)) ||
         (currentDepartment && currentDepartment.toLowerCase().includes(q)) ||
-        c.location.address.toLowerCase().includes(q) ||
-        (c.location.landmark && c.location.landmark.toLowerCase().includes(q)) ||
+        (c.location?.address && c.location.address.toLowerCase().includes(q)) ||
+        (c.location?.landmark && c.location.landmark.toLowerCase().includes(q)) ||
         (c.citizenName && c.citizenName.toLowerCase().includes(q));
 
       const matchesCat = categoryFilter === 'all' || currentCategory === categoryFilter;
@@ -594,10 +594,10 @@ export const AdminDashboard: React.FC = () => {
                       {/* Location */}
                       <td className="py-3.5 px-4 max-w-[180px]">
                         <span className="font-medium text-slate-800 line-clamp-1 text-[11px]">
-                          {c.location.landmark || c.location.address}
+                          {c.location?.landmark || c.location?.address || 'Municipal Sector'}
                         </span>
                         <span className="text-[10px] text-slate-400 truncate block mt-0.5">
-                          {c.location.district || c.location.address}
+                          {c.location?.district || c.location?.address || 'Metropolitan Area'}
                         </span>
                       </td>
 

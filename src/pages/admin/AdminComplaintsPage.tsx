@@ -106,7 +106,7 @@ export const AdminComplaintsPage: React.FC = () => {
         c.id.toLowerCase().includes(q) ||
         c.title.toLowerCase().includes(q) ||
         c.description.toLowerCase().includes(q) ||
-        c.location.address.toLowerCase().includes(q) ||
+        (c.location?.address && c.location.address.toLowerCase().includes(q)) ||
         (c.citizenName && c.citizenName.toLowerCase().includes(q)) ||
         (c.department && c.department.toLowerCase().includes(q));
 
@@ -457,7 +457,7 @@ export const AdminComplaintsPage: React.FC = () => {
                           {c.title}
                         </div>
                         <div className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
-                          {c.location.address}
+                          {c.location?.address || 'Metropolitan Sector'}
                         </div>
                         <div className="text-[10px] text-slate-400 font-mono mt-0.5">
                           {new Date(c.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}

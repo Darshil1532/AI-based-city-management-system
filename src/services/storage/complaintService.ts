@@ -79,9 +79,9 @@ export class LocalComplaintService implements IComplaintService {
       const descLower = c.description.toLowerCase();
       const catLower = c.category.toLowerCase();
       const deptLower = (c.department || c.assignedDepartment || '').toLowerCase();
-      const addrLower = (c.location.address || '').toLowerCase();
-      const landmarkLower = (c.location.landmark || '').toLowerCase();
-      const districtLower = (c.location.district || '').toLowerCase();
+      const addrLower = (c.location?.address || '').toLowerCase();
+      const landmarkLower = (c.location?.landmark || '').toLowerCase();
+      const districtLower = (c.location?.district || '').toLowerCase();
       const citizenLower = (c.citizenName || '').toLowerCase();
       const statusLower = c.status.toLowerCase();
       const priorityLower = (c.priority || c.finalPriority || c.aiPriority || '').toLowerCase();
@@ -143,7 +143,7 @@ export class LocalComplaintService implements IComplaintService {
         results.push({
           item: c,
           matchedFields,
-          snippet: `${c.location.landmark || c.location.address} • ${c.category} • ${c.status.toUpperCase()}`,
+          snippet: `${c.location?.landmark || c.location?.address || 'Municipal Zone'} • ${c.category} • ${c.status.toUpperCase()}`,
           score,
         });
       }

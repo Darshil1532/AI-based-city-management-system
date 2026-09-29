@@ -30,7 +30,7 @@ export const CitizenComplaintsList: React.FC = () => {
         c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.location.address.toLowerCase().includes(searchQuery.toLowerCase());
+        (c.location?.address && c.location.address.toLowerCase().includes(searchQuery.toLowerCase()));
 
       const matchesCat =
         selectedCategory === 'all' || c.category === selectedCategory;
@@ -163,7 +163,7 @@ export const CitizenComplaintsList: React.FC = () => {
                   <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 font-medium">
                     <span className="flex items-center gap-1">
                       <MapPin className="w-3 h-3 text-slate-400" />
-                      <span className="truncate max-w-xs">{c.location.landmark || c.location.address}</span>
+                      <span className="truncate max-w-xs">{c.location?.landmark || c.location?.address || 'Municipal Zone'}</span>
                     </span>
                     <span>•</span>
                     <span className="flex items-center gap-1">
