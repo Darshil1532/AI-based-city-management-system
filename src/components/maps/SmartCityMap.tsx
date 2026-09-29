@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import L from 'leaflet';
 import { Complaint, Hotspot, ComplaintCategory } from '../../types';
 import { CITY_BOUNDS, POPULAR_LANDMARKS } from '../../data/mockData';
-import { GoogleMapCanvas } from './GoogleMapCanvas';
+import { GoogleMapCanvas, GoogleMapCanvasHandle } from './GoogleMapCanvas';
 import { escapeHtml, safeText } from '../../utils/domSafe';
 import {
   MapPin,
@@ -122,6 +122,7 @@ export const SmartCityMap: React.FC<SmartCityMapProps> = ({
   const googleMapsApiKey = (import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY || '';
   const [useGoogleMaps, setUseGoogleMaps] = useState<boolean>(!!googleMapsApiKey);
   const [googleMapsError, setGoogleMapsError] = useState<string | null>(null);
+  const googleMapRef = useRef<GoogleMapCanvasHandle>(null);
 
   // Center coordinates: from selectedLocation, singleMarker, or CITY_BOUNDS center
   const initialCenter = useMemo<[number, number]>(() => {
@@ -739,15 +740,30 @@ export const SmartCityMap: React.FC<SmartCityMapProps> = ({
       });
   };
 
-  // Locate current position
-  const handleLocateMe = () => {
-    if (!navigator.geolocation) {
-      // Default to city center
-      mapInstanceRef.current?.flyTo([CITY_BOUNDS.center.lat, CITY_BOUNDS.center.lng], 15, { duration: 1 });
+  // Locate current position - Unified for Google Maps and Leaflet GIS
+  const handleLocateMe = async () => {
+    setIsLocating(true);
+
+    // If Google Maps is active and loaded, dispatch via GoogleMapCanvas imperative handle
+    if (useGoogleMaps && googleMapsApiKey && !googleMapsError && googleMapRef.current) {
+      try {
+        await googleMapRef.current.locateMe();
+      } catch (err: any) {
+        alert(err?.message || 'Could not retrieve your device location.');
+      } finally {
+        setIsLocating(false);
+      }
       return;
     }
 
-    setIsLocating(true);
+    // Leaflet fallback geolocation
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.');
+      mapInstanceRef.current?.flyTo([CITY_BOUNDS.center.lat, CITY_BOUNDS.center.lng], 15, { duration: 1 });
+      setIsLocating(false);
+      return;
+    }
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
@@ -757,20 +773,52 @@ export const SmartCityMap: React.FC<SmartCityMapProps> = ({
         }
         setIsLocating(false);
       },
-      () => {
-        // Fallback to city center if permission denied or unavailable
+      (err) => {
+        let msg = 'Unable to determine your location.';
+        if (err.code === 1) msg = 'Location permission was denied. Please allow location in your browser settings to pinpoint your position.';
+        else if (err.code === 3) msg = 'Location request timed out. Please try again.';
+        alert(msg);
         mapInstanceRef.current?.flyTo([CITY_BOUNDS.center.lat, CITY_BOUNDS.center.lng], 15, { duration: 1 });
         setIsLocating(false);
       },
-      { timeout: 5000 }
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
     );
   };
 
-  // Zoom controls
-  const handleZoomIn = () => mapInstanceRef.current?.zoomIn();
-  const handleZoomOut = () => mapInstanceRef.current?.zoomOut();
+  // Zoom controls - Unified for Google Maps & Leaflet
+  const handleZoomIn = () => {
+    if (useGoogleMaps && googleMapRef.current) {
+      googleMapRef.current.zoomIn();
+    } else {
+      mapInstanceRef.current?.zoomIn();
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (useGoogleMaps && googleMapRef.current) {
+      googleMapRef.current.zoomOut();
+    } else {
+      mapInstanceRef.current?.zoomOut();
+    }
+  };
+
   const handleRecenter = () => {
-    mapInstanceRef.current?.flyTo([CITY_BOUNDS.center.lat, CITY_BOUNDS.center.lng], 14, { duration: 1 });
+    if (useGoogleMaps && googleMapRef.current) {
+      googleMapRef.current.recenter();
+    } else {
+      mapInstanceRef.current?.flyTo([CITY_BOUNDS.center.lat, CITY_BOUNDS.center.lng], 14, { duration: 1 });
+    }
+  };
+
+  const handleSwitchTheme = (theme: 'streets' | 'satellite' | 'dark') => {
+    setActiveTheme(theme);
+    if (useGoogleMaps && googleMapRef.current) {
+      if (theme === 'satellite') {
+        googleMapRef.current.setMapType('satellite');
+      } else {
+        googleMapRef.current.setMapType('roadmap');
+      }
+    }
   };
 
   const toggleFullscreen = () => {
@@ -792,6 +840,7 @@ export const SmartCityMap: React.FC<SmartCityMapProps> = ({
       {/* Interactive Map Canvas (Google Maps or Leaflet Fallback GIS) */}
       {useGoogleMaps && googleMapsApiKey && !googleMapsError ? (
         <GoogleMapCanvas
+          ref={googleMapRef}
           apiKey={googleMapsApiKey}
           complaints={filteredComplaints}
           hotspots={hotspots}
@@ -916,7 +965,7 @@ export const SmartCityMap: React.FC<SmartCityMapProps> = ({
                   <div className="grid grid-cols-3 gap-1">
                     <button
                       type="button"
-                      onClick={() => setActiveTheme('streets')}
+                      onClick={() => handleSwitchTheme('streets')}
                       className={`py-1 text-[11px] font-semibold rounded-md border text-center transition-all ${
                         activeTheme === 'streets'
                           ? 'bg-slate-900 text-white border-slate-900'
@@ -927,7 +976,7 @@ export const SmartCityMap: React.FC<SmartCityMapProps> = ({
                     </button>
                     <button
                       type="button"
-                      onClick={() => setActiveTheme('satellite')}
+                      onClick={() => handleSwitchTheme('satellite')}
                       className={`py-1 text-[11px] font-semibold rounded-md border text-center transition-all ${
                         activeTheme === 'satellite'
                           ? 'bg-slate-900 text-white border-slate-900'
@@ -938,7 +987,7 @@ export const SmartCityMap: React.FC<SmartCityMapProps> = ({
                     </button>
                     <button
                       type="button"
-                      onClick={() => setActiveTheme('dark')}
+                      onClick={() => handleSwitchTheme('dark')}
                       className={`py-1 text-[11px] font-semibold rounded-md border text-center transition-all ${
                         activeTheme === 'dark'
                           ? 'bg-slate-900 text-white border-slate-900'
@@ -1002,7 +1051,7 @@ export const SmartCityMap: React.FC<SmartCityMapProps> = ({
           <div className="bg-white/95 backdrop-blur-md p-1 rounded-xl border border-slate-200/80 shadow-2xs hidden sm:flex items-center gap-0.5">
             <button
               type="button"
-              onClick={() => setActiveTheme('streets')}
+              onClick={() => handleSwitchTheme('streets')}
               className={`text-[11px] font-semibold px-2 py-1 rounded-lg transition-all cursor-pointer ${
                 activeTheme === 'streets'
                   ? 'bg-slate-900 text-white shadow-2xs'
@@ -1013,7 +1062,7 @@ export const SmartCityMap: React.FC<SmartCityMapProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => setActiveTheme('satellite')}
+              onClick={() => handleSwitchTheme('satellite')}
               className={`text-[11px] font-semibold px-2 py-1 rounded-lg transition-all cursor-pointer ${
                 activeTheme === 'satellite'
                   ? 'bg-slate-900 text-white shadow-2xs'
@@ -1024,7 +1073,7 @@ export const SmartCityMap: React.FC<SmartCityMapProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => setActiveTheme('dark')}
+              onClick={() => handleSwitchTheme('dark')}
               className={`text-[11px] font-semibold px-2 py-1 rounded-lg transition-all cursor-pointer ${
                 activeTheme === 'dark'
                   ? 'bg-slate-900 text-white shadow-2xs'

@@ -1,8 +1,16 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { Complaint, Hotspot } from '../../types';
 import { CITY_BOUNDS } from '../../data/mockData';
 import { createSafeComplaintInfoWindow, createSafeHotspotInfoWindow, escapeHtml } from '../../utils/domSafe';
-import { Navigation, Crosshair, ZoomIn, ZoomOut } from 'lucide-react';
+
+export interface GoogleMapCanvasHandle {
+  locateMe: () => Promise<{ latitude: number; longitude: number; address: string; landmark?: string }>;
+  recenter: () => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  panTo: (lat: number, lng: number, zoom?: number) => void;
+  setMapType: (type: 'roadmap' | 'satellite' | 'hybrid' | 'terrain') => void;
+}
 
 interface GoogleMapCanvasProps {
   apiKey: string;
@@ -66,28 +74,33 @@ function loadGoogleMapsScript(apiKey: string): Promise<void> {
   return window.__googleMapsLoadingPromise;
 }
 
-export const GoogleMapCanvas: React.FC<GoogleMapCanvasProps> = ({
-  apiKey,
-  complaints,
-  hotspots,
-  selectedComplaintId,
-  selectedHotspotId,
-  onSelectComplaint,
-  onSelectHotspot,
-  selectable,
-  selectedLocation,
-  onLocationSelect,
-  showHotspots,
-  focusLocation,
-  onLoadError,
-}) => {
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
-  const circlesRef = useRef<any[]>([]);
-  const pickerMarkerRef = useRef<any>(null);
-  const activeInfoWindowRef = useRef<any>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+export const GoogleMapCanvas = forwardRef<GoogleMapCanvasHandle, GoogleMapCanvasProps>(
+  (
+    {
+      apiKey,
+      complaints,
+      hotspots,
+      selectedComplaintId,
+      selectedHotspotId,
+      onSelectComplaint,
+      onSelectHotspot,
+      selectable,
+      selectedLocation,
+      onLocationSelect,
+      showHotspots,
+      focusLocation,
+      onLoadError,
+    },
+    ref
+  ) => {
+    const mapContainerRef = useRef<HTMLDivElement>(null);
+    const mapInstanceRef = useRef<any>(null);
+    const markersRef = useRef<any[]>([]);
+    const circlesRef = useRef<any[]>([]);
+    const pickerMarkerRef = useRef<any>(null);
+    const userLocationMarkerRef = useRef<any>(null);
+    const activeInfoWindowRef = useRef<any>(null);
+    const [isLoaded, setIsLoaded] = useState(false);
 
   // 1. Load Google Maps Script
   useEffect(() => {
@@ -355,29 +368,138 @@ export const GoogleMapCanvas: React.FC<GoogleMapCanvasProps> = ({
     mapInstanceRef.current.setZoom(16);
   }, [isLoaded, focusLocation]);
 
-  // 7. Manual Recenter Handler
-  const handleRecenter = () => {
-    if (!mapInstanceRef.current) return;
-    mapInstanceRef.current.panTo(CITY_BOUNDS.center);
-    mapInstanceRef.current.setZoom(CITY_BOUNDS.zoom);
-  };
+  // 7. Expose imperative handle methods to parent SmartCityMap
+  useImperativeHandle(
+    ref,
+    () => ({
+      locateMe: async () => {
+        return new Promise((resolve, reject) => {
+          if (!navigator.geolocation) {
+            reject(new Error('Geolocation is not supported by your browser.'));
+            return;
+          }
+
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const lat = Number(pos.coords.latitude.toFixed(6));
+              const lng = Number(pos.coords.longitude.toFixed(6));
+
+              if (mapInstanceRef.current && window.google?.maps) {
+                const userLatLng = { lat, lng };
+                mapInstanceRef.current.panTo(userLatLng);
+                mapInstanceRef.current.setZoom(16);
+
+                // Create or update dedicated user location marker
+                if (userLocationMarkerRef.current) {
+                  userLocationMarkerRef.current.setPosition(userLatLng);
+                } else {
+                  userLocationMarkerRef.current = new window.google.maps.Marker({
+                    position: userLatLng,
+                    map: mapInstanceRef.current,
+                    title: 'Your Current Location',
+                    zIndex: 350,
+                    icon: {
+                      path: window.google.maps.SymbolPath.CIRCLE,
+                      scale: 8,
+                      fillColor: '#2563eb',
+                      fillOpacity: 1,
+                      strokeWeight: 3,
+                      strokeColor: '#ffffff',
+                    },
+                  });
+                }
+              }
+
+              // Reverse geocode to get real street address
+              if (window.google?.maps) {
+                const geocoder = new window.google.maps.Geocoder();
+                geocoder.geocode({ location: { lat, lng } }, (results: any[], status: string) => {
+                  let addr = `${lat}°N, ${lng}°E (Current Device Location)`;
+                  let landmark = 'Current Location';
+
+                  if (status === 'OK' && results && results[0]) {
+                    addr = results[0].formatted_address;
+                    landmark = results[0].address_components?.[0]?.long_name || landmark;
+                  }
+
+                  if (selectable && onLocationSelect) {
+                    onLocationSelect({
+                      latitude: lat,
+                      longitude: lng,
+                      address: addr,
+                      landmark,
+                    });
+                  }
+
+                  resolve({ latitude: lat, longitude: lng, address: addr, landmark });
+                });
+              } else {
+                const fallbackAddr = `${lat}°N, ${lng}°E`;
+                if (selectable && onLocationSelect) {
+                  onLocationSelect({
+                    latitude: lat,
+                    longitude: lng,
+                    address: fallbackAddr,
+                    landmark: 'Current Location',
+                  });
+                }
+                resolve({ latitude: lat, longitude: lng, address: fallbackAddr, landmark: 'Current Location' });
+              }
+            },
+            (err) => {
+              let msg = 'Failed to retrieve current location.';
+              if (err.code === 1) msg = 'Location permission was denied. Please allow location access in your browser settings.';
+              else if (err.code === 2) msg = 'Location is unavailable on this network/device.';
+              else if (err.code === 3) msg = 'Location request timed out. Please try again.';
+              reject(new Error(msg));
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 12000,
+              maximumAge: 30000,
+            }
+          );
+        });
+      },
+
+      recenter: () => {
+        if (!mapInstanceRef.current) return;
+        mapInstanceRef.current.panTo(CITY_BOUNDS.center);
+        mapInstanceRef.current.setZoom(CITY_BOUNDS.zoom);
+      },
+
+      zoomIn: () => {
+        if (!mapInstanceRef.current) return;
+        const current = mapInstanceRef.current.getZoom() || 14;
+        mapInstanceRef.current.setZoom(current + 1);
+      },
+
+      zoomOut: () => {
+        if (!mapInstanceRef.current) return;
+        const current = mapInstanceRef.current.getZoom() || 14;
+        mapInstanceRef.current.setZoom(Math.max(1, current - 1));
+      },
+
+      panTo: (lat: number, lng: number, zoom?: number) => {
+        if (!mapInstanceRef.current) return;
+        mapInstanceRef.current.panTo({ lat, lng });
+        if (zoom) mapInstanceRef.current.setZoom(zoom);
+      },
+
+      setMapType: (type: 'roadmap' | 'satellite' | 'hybrid' | 'terrain') => {
+        if (!mapInstanceRef.current) return;
+        mapInstanceRef.current.setMapTypeId(type);
+      },
+    }),
+    [selectable, onLocationSelect]
+  );
 
   return (
     <div className="w-full h-full relative" style={{ minHeight: '100%' }}>
       {/* Google Maps Container */}
       <div ref={mapContainerRef} className="w-full h-full" />
-
-      {/* Recenter & Quick Navigation Floating Control */}
-      <div className="absolute bottom-12 right-3 z-10 flex flex-col gap-1.5">
-        <button
-          type="button"
-          onClick={handleRecenter}
-          title="Recenter to City Civic Core"
-          className="w-8 h-8 rounded-lg bg-white/95 hover:bg-white text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-md flex items-center justify-center transition-all cursor-pointer"
-        >
-          <Crosshair className="w-4 h-4 text-blue-600" />
-        </button>
-      </div>
     </div>
   );
-};
+});
+
+GoogleMapCanvas.displayName = 'GoogleMapCanvas';
