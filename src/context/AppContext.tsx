@@ -346,7 +346,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       priority: undefined,
       department: undefined,
       citizenName: data.citizenName || currentUser.name,
-      citizenPhone: data.citizenPhone || currentUser.phone || '+91 98260 12345',
+      citizenPhone: data.citizenPhone || currentUser.phone || undefined,
       createdAt: now,
       updatedAt: now,
       adminNotes: 'Registered and placed in municipal intake triage queue awaiting administrative review.',
@@ -364,7 +364,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           timestamp: new Date(Date.now() + 500).toISOString(),
           title: 'AI Decision-Support Recommendation Generated',
           description: `AI triage analyzed report: Recommended Category "${aiAnalysis.category}", Priority "${aiAnalysis.priority}", Department "${aiAnalysis.department}"${aiAnalysis.confidence !== undefined ? ` (Confidence: ${(aiAnalysis.confidence * 100).toFixed(0)}%)` : ' (Fallback decision support)'}. Human administrative validation pending.`,
-          actor: aiAnalysis.providerLabel || (aiAnalysis.provider === 'Gemini' ? 'Gemini 3.1 Flash Lite' : 'Demo AI'),
+          actor: aiAnalysis.providerLabel || (aiAnalysis.provider === 'Gemini' ? 'Gemini 2.5 Flash' : 'Demo AI'),
           badgeType: 'ai',
         },
       ],
@@ -781,7 +781,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         refreshNotifications();
 
-        // Authoritative civic backend synchronization
+        // Authoritative civic backend synchronization with automatic rollback on error
         if (isResolved) {
           civicApiClient
             .resolveComplaint(id, {
@@ -789,7 +789,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               officerSignature: updates.assignedOfficer || currentUser.name,
               overrideRationale: auditNote,
             })
-            .catch((err) => console.warn('[AppContext] Resolve backend sync notice:', err));
+            .then((res) => {
+              if (res?.complaint) {
+                complaintService.update(id, res.complaint);
+                setAllComplaintsList(complaintService.getAll());
+              }
+            })
+            .catch((err) => {
+              console.error('[AppContext] Authoritative resolution rejected by civic backend:', err);
+              // Immediate rollback to prevent state divergence
+              complaintService.update(id, existing);
+              setAllComplaintsList(complaintService.getAll());
+              alert(`Server rejected resolution: ${err?.message || 'Invalid transition'}`);
+            });
         } else {
           civicApiClient
             .updateStatus(id, {
@@ -797,7 +809,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               notes: updates.adminNotes || auditNote,
               overrideRationale: auditNote,
             })
-            .catch((err) => console.warn('[AppContext] UpdateStatus backend sync notice:', err));
+            .then((res) => {
+              if (res?.complaint) {
+                complaintService.update(id, res.complaint);
+                setAllComplaintsList(complaintService.getAll());
+              }
+            })
+            .catch((err) => {
+              console.error('[AppContext] Authoritative status transition rejected by civic backend:', err);
+              // Immediate rollback to prevent state divergence
+              complaintService.update(id, existing);
+              setAllComplaintsList(complaintService.getAll());
+              alert(`Server rejected status update: ${err?.message || 'Invalid lifecycle transition'}`);
+            });
         }
       }
     }

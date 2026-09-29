@@ -8,11 +8,56 @@ interface RateLimitRecord {
 const rateLimitMap = new Map<string, RateLimitRecord>();
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const MAX_REQUESTS_PER_WINDOW = 40; // 40 requests per minute
+const MAX_MAP_ENTRIES = 10000; // Hard cap on entries to prevent memory exhaustion
+
+/**
+ * Sweeps expired records to prevent memory leak.
+ */
+function cleanupExpiredRecords(now: number) {
+  for (const [key, record] of rateLimitMap.entries()) {
+    if (now > record.resetTime) {
+      rateLimitMap.delete(key);
+    }
+  }
+}
+
+/**
+ * Safely extracts client IP address.
+ * Only trusts X-Forwarded-For if TRUST_PROXY is explicitly enabled,
+ * preventing IP spoofing and rate limit bypasses.
+ */
+function resolveClientIp(req: Request): string {
+  const trustProxy = process.env.TRUST_PROXY === 'true' || req.app?.get('trust proxy');
+  if (trustProxy) {
+    const forwarded = req.headers['x-forwarded-for'];
+    if (typeof forwarded === 'string') {
+      const parts = forwarded.split(',');
+      const first = parts[0]?.trim();
+      if (first) return first;
+    }
+    if (Array.isArray(forwarded) && forwarded[0]) {
+      return forwarded[0].trim();
+    }
+  }
+
+  // Authoritative network socket address
+  return req.ip || req.socket.remoteAddress || '127.0.0.1';
+}
 
 export function aiRateLimiter(req: Request, res: Response, next: NextFunction) {
-  const forwarded = req.headers['x-forwarded-for'];
-  const ip = typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : req.socket.remoteAddress || 'unknown-client';
+  const ip = resolveClientIp(req);
   const now = Date.now();
+
+  // Bounded store protection: sweep if map exceeds threshold
+  if (rateLimitMap.size >= MAX_MAP_ENTRIES) {
+    cleanupExpiredRecords(now);
+    // If still full after cleanup, evict oldest entry
+    if (rateLimitMap.size >= MAX_MAP_ENTRIES) {
+      const firstKey = rateLimitMap.keys().next().value;
+      if (firstKey) rateLimitMap.delete(firstKey);
+    }
+  }
+
   const record = rateLimitMap.get(ip);
 
   if (!record || now > record.resetTime) {
@@ -33,4 +78,11 @@ export function aiRateLimiter(req: Request, res: Response, next: NextFunction) {
 
   record.count += 1;
   return next();
+}
+
+/**
+ * Test helper to reset rate limit state between test runs.
+ */
+export function _resetRateLimitMap() {
+  rateLimitMap.clear();
 }

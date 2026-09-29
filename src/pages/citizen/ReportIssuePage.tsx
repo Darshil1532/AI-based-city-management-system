@@ -511,7 +511,7 @@ export const ReportIssuePage: React.FC = () => {
                 Municipal AI Transparency Notice
               </span>
               <p className="text-[11px] leading-relaxed text-slate-500">
-                This real-time preview uses local heuristic rules to assist form completion. Official decision support will be processed by <strong className="text-slate-700">{aiProviderType === 'Gemini' ? 'Gemini 3.1 Flash Lite' : 'Demo AI'}</strong> upon submission. All final administrative triage decisions remain strictly with human municipal officers.
+                This real-time preview uses local heuristic rules to assist form completion. Official decision support will be processed by <strong className="text-slate-700">{aiProviderType === 'Gemini' ? 'Gemini 2.5 Flash' : 'Demo AI'}</strong> upon submission. All final administrative triage decisions remain strictly with human municipal officers.
               </p>
             </div>
           </div>

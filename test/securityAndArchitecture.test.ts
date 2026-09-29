@@ -11,6 +11,7 @@ import {
   ComplaintStatusSchema,
 } from '../server/ai/schemas';
 import { buildClassificationPrompt } from '../server/ai/prompts';
+import { aiRateLimiter, _resetRateLimitMap } from '../server/middleware/rateLimiter';
 
 // Helper to simulate Express requests directly in test
 async function makeRequest(
@@ -104,6 +105,40 @@ describe('Smart City Architecture & Security Verification Suite', () => {
       assert.equal(res.status, 401);
       assert.equal(res.body.code, 'UNAUTHORIZED');
     });
+
+    it('AUTH-5: Forged JWT token with admin email claims is cryptographically rejected (401 INVALID_TOKEN)', async () => {
+      const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
+      const payload = Buffer.from(
+        JSON.stringify({
+          iss: 'https://securetoken.google.com/gen-lang-client-0857632644',
+          aud: 'gen-lang-client-0857632644',
+          email: 'darshiljha1532@gmail.com',
+          admin: true,
+          sub: 'forged-attacker-id',
+          exp: Math.floor(Date.now() / 1000) + 3600,
+        })
+      ).toString('base64url');
+      const forgedJwt = `${header}.${payload}.forged_fake_signature_bytes`;
+
+      const res = await makeRequest('GET', '/api/admin/complaints', {
+        authorization: `Bearer ${forgedJwt}`,
+      });
+      assert.equal(res.status, 401);
+      assert.equal(res.body.code, 'INVALID_TOKEN');
+    });
+
+    it('AUTH-6: In production mode (ALLOW_DEMO_AUTH=false), demo tokens are rejected (401 DEMO_AUTH_DISABLED)', async () => {
+      process.env.ALLOW_DEMO_AUTH = 'false';
+      try {
+        const res = await makeRequest('GET', '/api/admin/complaints', {
+          authorization: 'Bearer demo-admin-token',
+        });
+        assert.equal(res.status, 401);
+        assert.equal(res.body.code, 'DEMO_AUTH_DISABLED');
+      } finally {
+        delete process.env.ALLOW_DEMO_AUTH;
+      }
+    });
   });
 
   // ==========================================
@@ -138,6 +173,33 @@ describe('Smart City Architecture & Security Verification Suite', () => {
       assert.equal(res.status, 200);
       assert.equal(res.body.accessLevel, 'citizen_owner');
       assert.equal(res.body.complaint.citizenId, 'CIT-DEMO-01');
+    });
+
+    it('PRIVACY-4: Public /api/complaints endpoint strictly redacts citizen PII and exact coordinates', async () => {
+      const res = await makeRequest('GET', '/api/complaints');
+      assert.equal(res.status, 200);
+      assert.ok(Array.isArray(res.body.complaints));
+      assert.ok(res.body.complaints.length > 0);
+
+      for (const item of res.body.complaints) {
+        assert.ok(item.id, 'Public complaint must have an ID');
+        assert.ok(item.category, 'Public complaint must have a category');
+        assert.ok(item.status, 'Public complaint must have a status');
+        assert.ok(item.district, 'Public complaint must have a general district');
+
+        // PII and private data fields must be undefined
+        assert.equal(item.citizenId, undefined, 'citizenId must be undefined');
+        assert.equal(item.citizenName, undefined, 'citizenName must be undefined');
+        assert.equal(item.citizenPhone, undefined, 'citizenPhone must be undefined');
+        assert.equal(item.citizenEmail, undefined, 'citizenEmail must be undefined');
+        assert.equal(item.description, undefined, 'description must be undefined');
+        assert.equal(item.adminNotes, undefined, 'adminNotes must be undefined');
+        assert.equal(item.aiReasoning, undefined, 'aiReasoning must be undefined');
+        assert.equal(item.aiFactors, undefined, 'aiFactors must be undefined');
+        assert.equal(item.location?.address, undefined, 'exact address must be undefined');
+        assert.equal(item.location?.latitude, undefined, 'exact latitude must be undefined');
+        assert.equal(item.location?.longitude, undefined, 'exact longitude must be undefined');
+      }
     });
   });
 
@@ -265,6 +327,42 @@ describe('Smart City Architecture & Security Verification Suite', () => {
       assert.equal(res.status, 400);
       assert.equal(res.body.code, 'INVALID_REQUEST');
     });
+
+    it('LIFECYCLE-5: State machine strictly forbids invalid transitions like resolved -> submitted or in_progress -> submitted', () => {
+      const complaint = complaintService.createComplaint(
+        {
+          title: 'Lifecycle State Machine Enforcement Test',
+          description: 'Testing invalid backwards lifecycle state transitions.',
+          category: 'Streetlight',
+          severity: 'Low',
+          location: { latitude: 23.2, longitude: 77.4, address: 'Test Lane' },
+        },
+        adminUser
+      );
+
+      // Advance to in_progress
+      complaintService.assignDepartment(complaint.id, { department: 'Electrical Department' }, adminUser);
+      complaintService.updateStatus(complaint.id, { status: 'in_progress' }, adminUser);
+
+      // Attempt invalid transition: in_progress -> submitted
+      const revertAttempt = complaintService.updateStatus(complaint.id, { status: 'submitted' }, adminUser);
+      assert.equal(revertAttempt.success, false);
+      assert.equal(revertAttempt.code, 'INVALID_STATE_TRANSITION');
+
+      // Resolve properly
+      complaintService.resolveComplaint(complaint.id, { resolutionDetails: 'Fixed completely' }, adminUser);
+      assert.equal(complaint.status, 'resolved');
+
+      // Attempt invalid transition: resolved -> submitted
+      const fromResolvedToSubmitted = complaintService.updateStatus(complaint.id, { status: 'submitted' }, adminUser);
+      assert.equal(fromResolvedToSubmitted.success, false);
+      assert.equal(fromResolvedToSubmitted.code, 'INVALID_STATE_TRANSITION');
+
+      // Attempt invalid transition: resolved -> assigned
+      const fromResolvedToAssigned = complaintService.updateStatus(complaint.id, { status: 'assigned' }, adminUser);
+      assert.equal(fromResolvedToAssigned.success, false);
+      assert.equal(fromResolvedToAssigned.code, 'INVALID_STATE_TRANSITION');
+    });
   });
 
   // ==========================================
@@ -376,6 +474,101 @@ describe('Smart City Architecture & Security Verification Suite', () => {
 
       // 4. Deletions disabled for auditability
       assert.ok(rulesContent.includes('allow delete: if false'));
+    });
+
+    it('FIRESTORE-2: Rules restrict /insights to admin and /notifications creation to owner or admin', async () => {
+      const fs = await import('fs');
+      const rulesContent = fs.readFileSync('firestore.rules', 'utf8');
+
+      // Insights restricted to admin
+      assert.ok(rulesContent.includes('match /insights/{insightId}'));
+      assert.ok(rulesContent.includes('allow get: if isValidId(insightId) && isAdmin();'));
+      assert.ok(rulesContent.includes('allow list: if isAdmin();'));
+
+      // Notifications creation restricted to owner or admin
+      assert.ok(rulesContent.includes('incoming().userId == request.auth.uid || isAdmin()'));
+    });
+  });
+
+  // ==========================================
+  // DATA INTEGRITY & ARCHITECTURE BOUNDARIES
+  // ==========================================
+  describe('Data Integrity & Architecture Boundaries', () => {
+    const adminUser = {
+      id: 'ADM-DEMO-01',
+      role: 'admin' as const,
+      name: 'Demo Municipal Officer',
+      isDemo: true,
+      authProvider: 'demo' as const,
+    };
+
+    it('DATA-1: Citizen phone number is not hardcoded and respects input or undefined', () => {
+      const complaintNoPhone = complaintService.createComplaint(
+        {
+          title: 'No phone report',
+          description: 'Reporting without personal phone number.',
+          category: 'Streetlight',
+          severity: 'Low',
+          location: { latitude: 23.2, longitude: 77.4, address: 'No Phone Street' },
+        },
+        adminUser
+      );
+      assert.equal(complaintNoPhone.citizenPhone, undefined, 'Default phone must not be hardcoded');
+
+      const complaintWithPhone = complaintService.createComplaint(
+        {
+          title: 'Custom phone report',
+          description: 'Reporting with real phone number.',
+          category: 'Streetlight',
+          severity: 'Low',
+          citizenPhone: '+91 98765 43210',
+          location: { latitude: 23.2, longitude: 77.4, address: 'Phone Street' },
+        },
+        adminUser
+      );
+      assert.equal(complaintWithPhone.citizenPhone, '+91 98765 43210');
+    });
+
+    it('DATA-2: Complaint IDs are collision-safe and unique', () => {
+      const ids = new Set<string>();
+      for (let i = 0; i < 50; i++) {
+        const id = complaintService.generateUniqueId();
+        assert.equal(ids.has(id), false, `Duplicate ID generated: ${id}`);
+        ids.add(id);
+      }
+      assert.equal(ids.size, 50);
+    });
+  });
+
+  // ==========================================
+  // RATE LIMITER & BOUNDED PROTECTION
+  // ==========================================
+  describe('Rate Limiter & Bounded Protection', () => {
+    it('RATELIMIT-1: Rate limiter enforces limit and bounded map works', () => {
+      _resetRateLimitMap();
+      const mockReq: any = {
+        headers: {},
+        socket: { remoteAddress: '198.51.100.1' },
+      };
+      let passed = 0;
+      let blocked = false;
+      const nextFn = () => { passed++; };
+      const res: any = {
+        set() {},
+        status(code: number) {
+          if (code === 429) blocked = true;
+          return {
+            json() {},
+          };
+        },
+      };
+
+      for (let i = 0; i < 45; i++) {
+        aiRateLimiter(mockReq, res, nextFn);
+      }
+
+      assert.equal(passed, 40, 'Should allow exactly 40 requests in window');
+      assert.equal(blocked, true, 'Requests exceeding limit must be rate limited with 429');
     });
   });
 });

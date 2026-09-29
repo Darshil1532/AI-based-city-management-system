@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import firebaseConfig from '../../firebase-applet-config.json';
+import { verifyFirebaseIdToken } from '../lib/firebaseAdmin';
 
 /**
  * Server-Side Authentication & Authorization Middleware
@@ -56,89 +57,100 @@ const ADMIN_EMAILS = new Set([
 ]);
 
 /**
+ * Checks if demo persona authentication is permitted in the current environment.
+ * Strictly disabled in production unless ALLOW_DEMO_AUTH is explicitly set to 'true'.
+ */
+export function isDemoAuthAllowed(): boolean {
+  if (process.env.ALLOW_DEMO_AUTH === 'true') return true;
+  if (process.env.ALLOW_DEMO_AUTH === 'false') return false;
+  return process.env.NODE_ENV !== 'production';
+}
+
+/**
  * Parses and verifies tokens.
  * Supports:
- * 1. Firebase Auth ID Token (JWT verification)
- * 2. Explicit, isolated demo tokens (strictly labeled as isDemo: true)
+ * 1. Cryptographically verified Firebase Auth ID Token (RS256 via Firebase Admin)
+ * 2. Explicit demo tokens ONLY when demo auth is enabled (non-production or ALLOW_DEMO_AUTH=true)
  * 
- * Arbitrary `x-user-role: admin` spoofing is explicitly rejected.
+ * Unverified JWT payloads and header spoofing are strictly rejected.
  */
-export function authenticateToken(req: Request, res: Response, next: NextFunction) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : null;
+export async function authenticateToken(req: Request, res: Response, next: NextFunction) {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : null;
 
-  // 1. Check isolated Demo Tokens first
-  if (token && KNOWN_DEMO_TOKENS[token]) {
-    req.user = { ...KNOWN_DEMO_TOKENS[token] };
-    return next();
-  }
-
-  // 2. Firebase ID Token Verification (JWT format)
-  if (token && token.includes('.')) {
-    try {
-      const parts = token.split('.');
-      if (parts.length === 3) {
-        // Decode payload
-        const payloadStr = Buffer.from(parts[1], 'base64').toString('utf8');
-        const payload = JSON.parse(payloadStr);
-
-        // Verify standard Firebase token claims
-        const now = Math.floor(Date.now() / 1000);
-        const isFirebaseIssuer = payload.iss && payload.iss.includes('securetoken.google.com');
-        const isCorrectProject = !firebaseConfig.projectId || payload.aud === firebaseConfig.projectId;
-        const isNotExpired = !payload.exp || payload.exp > now;
-
-        if (isFirebaseIssuer && isCorrectProject && isNotExpired) {
-          const email = payload.email || '';
-          const isAdminUser = ADMIN_EMAILS.has(email) || payload.admin === true;
-
-          req.user = {
-            id: payload.user_id || payload.sub,
-            role: isAdminUser ? 'admin' : 'citizen',
-            name: payload.name || (isAdminUser ? 'Municipal Officer' : 'Citizen Resident'),
-            email,
-            isDemo: false,
-            authProvider: 'firebase',
-          };
-          return next();
-        }
+    // 1. Check isolated Demo Tokens (ONLY if demo auth is permitted)
+    if (token && KNOWN_DEMO_TOKENS[token]) {
+      if (!isDemoAuthAllowed()) {
+        return res.status(401).json({
+          error: 'Unauthorized',
+          code: 'DEMO_AUTH_DISABLED',
+          message: 'Demo credentials are disabled in production environments.',
+        });
       }
-    } catch (jwtErr) {
-      console.warn('[AuthMiddleware] Firebase token decode failed:', jwtErr);
-    }
-  }
-
-  // 3. Isolated Demo Fallback (ONLY for local demo evaluation if explicit header key matches demo user)
-  // We explicitly reject spoofed `x-user-role: admin` without a valid token.
-  const demoApiKey = req.headers['x-demo-access-key'];
-  const headerUserId = req.headers['x-user-id'] as string | undefined;
-
-  if (demoApiKey === 'smartcity-demo-key-v1' && headerUserId) {
-    if (headerUserId.startsWith('ADM-')) {
-      req.user = {
-        id: headerUserId,
-        role: 'admin',
-        name: 'Demo Municipal Officer',
-        email: 'admin.demo@smartcity.gov.in',
-        isDemo: true,
-        authProvider: 'demo',
-      };
-      return next();
-    } else {
-      req.user = {
-        id: headerUserId,
-        role: 'citizen',
-        name: 'Demo Citizen',
-        email: 'citizen.demo@smartcity.local',
-        isDemo: true,
-        authProvider: 'demo',
-      };
+      req.user = { ...KNOWN_DEMO_TOKENS[token] };
       return next();
     }
-  }
 
-  // Unauthenticated request
-  return next();
+    // 2. Firebase ID Token Verification - Cryptographic signature verification
+    if (token && token.includes('.')) {
+      try {
+        const decoded = await verifyFirebaseIdToken(token);
+        const email = decoded.email || '';
+        const isAdminUser = ADMIN_EMAILS.has(email) || (decoded as any).admin === true;
+
+        req.user = {
+          id: decoded.uid || decoded.sub,
+          role: isAdminUser ? 'admin' : 'citizen',
+          name: decoded.name || (isAdminUser ? 'Municipal Officer' : 'Citizen Resident'),
+          email,
+          isDemo: false,
+          authProvider: 'firebase',
+        };
+        return next();
+      } catch (jwtErr: any) {
+        console.warn('[AuthMiddleware] Cryptographic JWT verification failed:', jwtErr?.message || jwtErr);
+        return res.status(401).json({
+          error: 'Unauthorized',
+          code: 'INVALID_TOKEN',
+          message: 'Cryptographic token verification failed. Invalid or forged token signature.',
+        });
+      }
+    }
+
+    // 3. Isolated Demo Fallback Headers (ONLY if demo auth is permitted)
+    const demoApiKey = req.headers['x-demo-access-key'];
+    const headerUserId = req.headers['x-user-id'] as string | undefined;
+
+    if (demoApiKey === 'smartcity-demo-key-v1' && headerUserId && isDemoAuthAllowed()) {
+      if (headerUserId.startsWith('ADM-')) {
+        req.user = {
+          id: headerUserId,
+          role: 'admin',
+          name: 'Demo Municipal Officer',
+          email: 'admin.demo@smartcity.gov.in',
+          isDemo: true,
+          authProvider: 'demo',
+        };
+        return next();
+      } else {
+        req.user = {
+          id: headerUserId,
+          role: 'citizen',
+          name: 'Demo Citizen',
+          email: 'citizen.demo@smartcity.local',
+          isDemo: true,
+          authProvider: 'demo',
+        };
+        return next();
+      }
+    }
+
+    // Unauthenticated request
+    return next();
+  } catch (err) {
+    return next(err);
+  }
 }
 
 /**

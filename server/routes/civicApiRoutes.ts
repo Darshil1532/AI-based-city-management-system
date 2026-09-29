@@ -28,6 +28,7 @@ const CreateComplaintSchema = z.object({
   category: ComplaintCategorySchema,
   severity: PriorityLevelSchema.default('Medium'),
   priority: PriorityLevelSchema.optional(),
+  citizenPhone: z.string().max(25).optional(),
   location: z.object({
     latitude: z.number().min(-90).max(90),
     longitude: z.number().min(-180).max(180),

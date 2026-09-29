@@ -84,8 +84,8 @@ service cloud.firestore {
 
     // AI Insights collection (Systemic cross-issue municipal intelligence)
     match /insights/{insightId} {
-      allow get: if isValidId(insightId) && isSignedIn();
-      allow list: if isSignedIn();
+      allow get: if isValidId(insightId) && isAdmin();
+      allow list: if isAdmin();
       allow create, update: if isValidId(insightId)
                             && isAdmin()
                             && incoming().keys().hasAll(['id', 'title', 'detectedPattern', 'recommendation', 'status'])
@@ -102,6 +102,7 @@ service cloud.firestore {
       allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isValidId(notificationId)
                     && isSignedIn()
+                    && (incoming().userId == request.auth.uid || isAdmin())
                     && incoming().keys().hasAll(['id', 'userId', 'title', 'message', 'timestamp', 'read', 'type'])
                     && incoming().id is string
                     && incoming().title is string && incoming().title.size() <= 300

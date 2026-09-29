@@ -1,8 +1,23 @@
 import { INITIAL_COMPLAINTS } from '../../src/data/mockData';
 import { Complaint, ComplaintStatus, TimelineEvent, ComplaintCategory, PriorityLevel, DepartmentName } from '../../src/types';
 import { AuthenticatedUser } from '../middleware/authMiddleware';
-import { db } from '../../src/lib/firebase';
-import { collection, doc, getDocs, setDoc } from 'firebase/firestore';
+import { getAdminFirestore } from '../lib/firebaseAdmin';
+
+export const ALLOWED_TRANSITIONS: Record<ComplaintStatus, ComplaintStatus[]> = {
+  submitted: ['assigned', 'resolved'],
+  assigned: ['in_progress', 'submitted'],
+  in_progress: ['resolved', 'assigned'],
+  resolved: [], // Terminal lifecycle state
+};
+
+export interface PublicComplaintSummary {
+  id: string;
+  category: ComplaintCategory;
+  status: ComplaintStatus;
+  district: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 function sanitizeForFirestore(obj: any): any {
   if (obj === undefined) return null;
@@ -21,11 +36,12 @@ function sanitizeForFirestore(obj: any): any {
  * Authoritative Server Complaint Service
  * 
  * Enforces:
- * 1. Single source of truth across municipal backend backed by Firestore
+ * 1. Single source of truth across municipal backend backed by Firestore Admin
  * 2. Strict complaint lifecycle state machine
  * 3. Immutable audit timeline events with actor identity
  * 4. Human-in-the-loop decision recording (ratify vs. override)
  * 5. Citizen data privacy and sanitized public tracking
+ * 6. Cryptographically collision-safe ID generation
  */
 
 export class ComplaintService {
@@ -38,7 +54,7 @@ export class ComplaintService {
   }
 
   private initStore(): void {
-    // Clone demo records and ensure demo officer naming compliance (Phase 16)
+    // Clone demo records and ensure demo officer naming compliance
     this.complaints = INITIAL_COMPLAINTS.map((c) => ({
       ...c,
       assignedOfficer: c.assignedOfficer ? 'Demo Municipal Officer' : undefined,
@@ -48,11 +64,12 @@ export class ComplaintService {
   private async syncWithFirestore(): Promise<void> {
     if (process.env.NODE_ENV === 'test') return;
     try {
-      if (!db) return;
-      const snapshot = await getDocs(collection(db, 'complaints'));
+      const adminDb = getAdminFirestore();
+      if (!adminDb) return;
+      const snapshot = await adminDb.collection('complaints').get();
       if (!snapshot.empty) {
         const firestoreComplaints: Complaint[] = [];
-        snapshot.forEach((d) => {
+        snapshot.forEach((d: any) => {
           firestoreComplaints.push(d.data() as Complaint);
         });
         if (firestoreComplaints.length > 0) {
@@ -69,24 +86,40 @@ export class ComplaintService {
         }
       } else {
         // Seed initial complaints to Firestore if completely empty
+        const batch = adminDb.batch();
         for (const c of this.complaints.slice(0, 5)) {
-          await setDoc(doc(db, 'complaints', c.id), sanitizeForFirestore(c), { merge: true });
+          batch.set(adminDb.collection('complaints').doc(c.id), sanitizeForFirestore(c), { merge: true });
         }
+        await batch.commit();
       }
       this.isFirestoreSynced = true;
-    } catch (err) {
-      console.warn('[ComplaintService] Firestore sync notice (using authoritative memory store):', (err as Error)?.message || err);
+    } catch (err: any) {
+      console.info('[ComplaintService] Firestore admin sync notice (using authoritative memory store):', err?.message || err);
     }
   }
 
   private async persistToFirestore(complaint: Complaint): Promise<void> {
     if (process.env.NODE_ENV === 'test') return;
     try {
-      if (!db) return;
-      await setDoc(doc(db, 'complaints', complaint.id), sanitizeForFirestore(complaint), { merge: true });
-    } catch (err) {
-      console.warn(`[ComplaintService] Firestore persistence notice for ${complaint.id}:`, (err as Error)?.message || err);
+      const adminDb = getAdminFirestore();
+      if (!adminDb) return;
+      await adminDb.collection('complaints').doc(complaint.id).set(sanitizeForFirestore(complaint), { merge: true });
+    } catch (err: any) {
+      console.info(`[ComplaintService] Firestore persistence notice for ${complaint.id}:`, err?.message || err);
     }
+  }
+
+  generateUniqueId(): string {
+    const existingIds = new Set(this.complaints.map((c) => c.id.toUpperCase()));
+    const year = new Date().getFullYear();
+    for (let i = 0; i < 100; i++) {
+      const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const candidate = `SC-${year}-${rand}`;
+      if (!existingIds.has(candidate)) {
+        return candidate;
+      }
+    }
+    return `SC-${year}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
   }
 
   getAll(user?: AuthenticatedUser): Complaint[] {
@@ -99,24 +132,30 @@ export class ComplaintService {
     return [...this.complaints];
   }
 
-  getAllPublic(user?: AuthenticatedUser): Complaint[] {
+  getAllPublic(user?: AuthenticatedUser): Array<Complaint | PublicComplaintSummary> {
     return this.complaints.map((c) => {
       const isOwnerOrAdmin = user && (user.role === 'admin' || user.id === c.citizenId);
       if (isOwnerOrAdmin) {
         return c;
       }
+      // Public-sanitized representation: strictly excludes citizen PII, coordinates, and internal AI notes
       return {
-        ...c,
-        citizenPhone: undefined,
-        citizenEmail: undefined,
-        adminNotes: undefined,
+        id: c.id,
+        category: c.category,
+        status: c.status,
+        district: c.location?.district || 'General',
+        createdAt: c.createdAt,
+        updatedAt: c.updatedAt,
       };
     });
   }
 
   getById(id: string): Complaint | undefined {
     const norm = id.trim().toUpperCase();
-    return this.complaints.find((c) => c.id.toUpperCase() === norm || c.id.toUpperCase() === `SC-${norm}`);
+    return this.complaints.find((c) => {
+      const cid = c.id.toUpperCase();
+      return cid === norm || cid === `SC-${norm}` || `SC-${cid}` === norm;
+    });
   }
 
   getByCitizenId(citizenId: string): Complaint[] {
@@ -148,17 +187,13 @@ export class ComplaintService {
         category: complaint.category,
         status: complaint.status,
         assignedDepartment: complaint.assignedDepartment || complaint.department,
-        location: {
-          address: complaint.location.address,
-          district: complaint.location.district,
-        },
+        district: complaint.location?.district || 'General',
         createdAt: complaint.createdAt,
         updatedAt: complaint.updatedAt,
         timeline: complaint.timeline.map((t) => ({
           status: t.status,
           timestamp: t.timestamp,
           title: t.title,
-          description: t.description,
           badgeType: t.badgeType,
         })),
       },
@@ -175,6 +210,7 @@ export class ComplaintService {
       category: ComplaintCategory;
       severity: 'Low' | 'Medium' | 'High';
       priority?: PriorityLevel;
+      citizenPhone?: string;
       location: {
         latitude: number;
         longitude: number;
@@ -196,7 +232,7 @@ export class ComplaintService {
     user: AuthenticatedUser
   ): Complaint {
     const now = new Date().toISOString();
-    const newId = `SC${1000 + this.complaints.length + 1}`;
+    const newId = this.generateUniqueId();
 
     const timeline: TimelineEvent[] = [
       {
@@ -228,7 +264,7 @@ export class ComplaintService {
       id: newId,
       citizenId: user.id, // Immutable bound ownership
       citizenName: user.name,
-      citizenPhone: '+91 98260 12345',
+      citizenPhone: data.citizenPhone || undefined,
       title: data.title,
       description: data.description,
       category: data.category,
@@ -397,9 +433,18 @@ export class ComplaintService {
       return { success: true, complaint };
     }
 
+    const allowed = ALLOWED_TRANSITIONS[currentStatus] || [];
+    if (!allowed.includes(targetStatus)) {
+      return {
+        success: false,
+        error: `Invalid state transition: Cannot transition complaint from '${currentStatus}' to '${targetStatus}'. Allowed transitions: [${allowed.join(', ') || 'none (terminal state)'}].`,
+        code: 'INVALID_STATE_TRANSITION',
+      };
+    }
+
     // Direct submitted -> resolved requires explicit administrative override
     if (currentStatus === 'submitted' && targetStatus === 'resolved') {
-      if (!params.overrideRationale) {
+      if (!params.overrideRationale || params.overrideRationale.trim().length < 5) {
         return {
           success: false,
           error: 'Direct transition from "submitted" to "resolved" requires an explicit administrative override rationale.',

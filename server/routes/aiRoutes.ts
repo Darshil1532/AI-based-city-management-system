@@ -1,6 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { aiRateLimiter } from '../middleware/rateLimiter';
-import { getGeminiClient, callGeminiWithFallback } from '../ai/geminiClient';
+import {
+  getGeminiClient,
+  callGeminiWithFallback,
+  GEMINI_PRIMARY_MODEL,
+  GEMINI_PRIMARY_MODEL_LABEL,
+  GEMINI_FALLBACK_MODEL,
+  GEMINI_FALLBACK_MODEL_LABEL,
+} from '../ai/geminiClient';
 import {
   AnalyzeRequestSchema,
   GeminiOutputSchema,
@@ -31,9 +38,9 @@ aiRouter.get('/ai/status', (_req: Request, res: Response) => {
   res.json({
     geminiConfigured: isConfigured,
     activeProvider: isConfigured ? 'Gemini' : 'Demo AI',
-    model: isConfigured ? 'gemini-2.5-flash' : 'Demo AI',
-    fallbackModel: 'gemini-2.5-flash-lite',
-    providerLabel: isConfigured ? 'Gemini 2.5 Flash' : 'Demo AI',
+    model: isConfigured ? GEMINI_PRIMARY_MODEL : 'Demo AI',
+    fallbackModel: GEMINI_FALLBACK_MODEL,
+    providerLabel: isConfigured ? GEMINI_PRIMARY_MODEL_LABEL : 'Demo AI',
   });
 });
 
@@ -137,23 +144,23 @@ aiRouter.post('/ai/analyze', aiRateLimiter, async (req: Request, res: Response) 
 
     if (errMsg.includes('429') || errMsg.includes('quota') || errMsg.includes('RESOURCE_EXHAUSTED')) {
       return res.status(429).json({
-        error: 'Gemini rate limit exceeded',
-        message: 'Upstream quota exhausted. Please try again shortly.',
+        error: 'AI service rate limit reached',
+        message: 'The civic AI decision-support service is currently experiencing high demand. Please try again shortly.',
         code: 'RATE_LIMITED',
       });
     }
 
     if (errMsg.includes('timeout') || errMsg.includes('Timeout')) {
       return res.status(503).json({
-        error: 'Gemini request timeout',
-        message: 'Upstream Gemini request timed out.',
+        error: 'AI request timed out',
+        message: 'The AI decision-support request timed out before completing.',
         code: 'GEMINI_TIMEOUT',
       });
     }
 
     return res.status(503).json({
-      error: 'Gemini service error',
-      message: errMsg,
+      error: 'AI service temporarily unavailable',
+      message: 'Automated municipal decision-support is temporarily unavailable. Please proceed with manual triage.',
       code: 'GEMINI_UNAVAILABLE',
     });
   }
@@ -219,15 +226,15 @@ aiRouter.post('/ai/insights', aiRateLimiter, async (req: Request, res: Response)
 
     if (errMsg.includes('timeout')) {
       return res.status(503).json({
-        error: 'Gemini insights timeout',
-        message: 'Upstream Gemini request timed out.',
+        error: 'AI insights timeout',
+        message: 'The AI insights request timed out.',
         code: 'GEMINI_TIMEOUT',
       });
     }
 
     return res.status(503).json({
-      error: 'Gemini insights unavailable',
-      message: errMsg,
+      error: 'AI insights temporarily unavailable',
+      message: 'Automated municipal pattern detection is temporarily unavailable.',
       code: 'GEMINI_UNAVAILABLE',
     });
   }
