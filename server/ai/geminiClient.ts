@@ -1,9 +1,9 @@
 import { GoogleGenAI } from '@google/genai';
 
-export const GEMINI_PRIMARY_MODEL = 'gemini-2.5-flash';
-export const GEMINI_PRIMARY_MODEL_LABEL = 'Gemini 2.5 Flash';
-export const GEMINI_FALLBACK_MODEL = 'gemini-2.5-flash-lite';
-export const GEMINI_FALLBACK_MODEL_LABEL = 'Gemini 2.5 Flash Lite';
+export const GEMINI_PRIMARY_MODEL = process.env.GEMINI_PRIMARY_MODEL || 'gemini-3.1-flash-lite';
+export const GEMINI_PRIMARY_MODEL_LABEL = 'Gemini 3.1 Flash Lite';
+export const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite';
+export const GEMINI_FALLBACK_MODEL_LABEL = 'Gemini 3.5 Flash Lite';
 
 let geminiClient: GoogleGenAI | null = null;
 

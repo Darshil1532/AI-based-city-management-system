@@ -163,12 +163,12 @@ export const Header: React.FC<HeaderProps> = ({
             <div
               id="header-ai-provider-badge"
               className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100/90 border border-slate-200/80 text-[11px] font-mono text-slate-700 shadow-2xs"
-              title={`Decision-Support AI: ${aiProviderType === 'Gemini' ? 'gemini-2.5-flash (fallback: gemini-2.5-flash-lite)' : 'Demo Rule-Based Expert System'}`}
+              title={`Decision-Support AI: ${aiProviderType === 'Gemini' ? 'gemini-3.1-flash-lite (fallback: gemini-3.5-flash-lite)' : 'Demo Rule-Based Expert System'}`}
             >
               <Sparkles className="w-3.5 h-3.5 text-blue-600" />
               <span className="text-slate-500 font-medium">AI:</span>
               <span className="text-slate-900 font-semibold">
-                {aiProviderType === 'Gemini' ? 'Gemini 2.5 Flash' : 'Demo AI'}
+                {aiProviderType === 'Gemini' ? 'Gemini 3.1 Flash Lite' : 'Demo AI'}
               </span>
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" title="Active" />
             </div>

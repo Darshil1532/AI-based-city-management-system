@@ -9,7 +9,7 @@ import { DemoAIProvider } from './DemoAIProvider';
 
 export class GeminiProvider implements IAIProvider {
   name: 'Gemini' = 'Gemini';
-  label: string = 'Gemini 2.5 Flash';
+  label: string = 'Gemini 3.1 Flash Lite';
   private fallbackProvider: DemoAIProvider = new DemoAIProvider();
 
   async isAvailable(): Promise<boolean> {
@@ -17,6 +17,9 @@ export class GeminiProvider implements IAIProvider {
       const res = await fetch('/api/ai/status', { signal: AbortSignal.timeout(2500) });
       if (!res.ok) return false;
       const data = await res.json();
+      if (data.providerLabel) {
+        this.label = data.providerLabel;
+      }
       return !!data.geminiConfigured;
     } catch {
       return false;
@@ -58,7 +61,7 @@ export class GeminiProvider implements IAIProvider {
             publicImpactScore: data.publicImpactScore || 7,
             urgencyIndicators: data.urgencyIndicators || [],
             provider: 'Gemini',
-            providerLabel: this.label,
+            providerLabel: data.providerLabel || this.label,
             timestamp: new Date().toISOString(),
           };
         }

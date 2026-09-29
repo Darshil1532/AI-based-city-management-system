@@ -778,7 +778,7 @@ describe('Smart City Architecture & Security Verification Suite', () => {
             reasoning: 'Critical arterial road defect posing immediate hazard.',
             factors: ['Heavy traffic', 'Depth > 10cm'],
             provider: 'Gemini',
-            providerLabel: 'Gemini 2.5 Flash',
+            providerLabel: 'Gemini 3.1 Flash Lite',
           },
         }
       );

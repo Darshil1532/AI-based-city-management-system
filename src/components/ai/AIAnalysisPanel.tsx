@@ -28,7 +28,8 @@ export const AIAnalysisPanel: React.FC<AIAnalysisPanelProps> = ({
 }) => {
   const isHeuristicPreview = (directAnalysis as any)?.isHeuristicPreview;
   const rawProvider = directAnalysis ? directAnalysis.provider : complaint?.aiProvider;
-  const providerDisplay = rawProvider === 'Gemini' ? 'Gemini 2.5 Flash' : 'Demo AI';
+  const rawProviderLabel = directAnalysis ? (directAnalysis as any).providerLabel : (complaint as any)?.aiProviderLabel;
+  const providerDisplay = rawProviderLabel || (rawProvider === 'Gemini' ? 'Gemini 3.1 Flash Lite' : 'Demo AI');
   const category = directAnalysis ? directAnalysis.category : complaint?.aiCategory;
   const priority = directAnalysis ? directAnalysis.priority : complaint?.aiPriority;
   const department = directAnalysis ? directAnalysis.department : complaint?.aiDepartment;
