@@ -69,8 +69,8 @@ export function getFirebaseAdminApp(): App | null {
       }
     }
 
-    // Default initialization (works with GOOGLE_APPLICATION_CREDENTIALS or gcloud environment)
-    if (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.NODE_ENV !== 'production') {
+    // Default initialization (works with GOOGLE_APPLICATION_CREDENTIALS or emulator)
+    if (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.FIRESTORE_EMULATOR_HOST) {
       adminApp = initializeApp({
         projectId,
       });
