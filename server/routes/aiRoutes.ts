@@ -3,11 +3,14 @@ import { aiRateLimiter } from '../middleware/rateLimiter';
 import {
   getGeminiClient,
   callGeminiWithFallback,
+  callGeminiChatWithTools,
+  CitizenIssueQueryResult,
   GEMINI_PRIMARY_MODEL,
   GEMINI_PRIMARY_MODEL_LABEL,
   GEMINI_FALLBACK_MODEL,
   GEMINI_FALLBACK_MODEL_LABEL,
 } from '../ai/geminiClient';
+import { complaintService } from '../services/complaintService';
 import {
   AnalyzeRequestSchema,
   GeminiOutputSchema,
@@ -257,7 +260,7 @@ aiRouter.post('/ai/chat', aiRateLimiter, async (req: Request, res: Response) => 
     });
   }
 
-  const { messages, userLocation } = reqValidation.data;
+  const { messages, userLocation, citizenId } = reqValidation.data;
   const ai = getGeminiClient();
 
   if (!ai) {
@@ -278,17 +281,71 @@ aiRouter.post('/ai/chat', aiRateLimiter, async (req: Request, res: Response) => 
     userLocation,
   });
 
+  const executeTool = async (name: string, args: any) => {
+    if (name === 'queryCitizenIssues') {
+      const { complaintId, statusFilter } = args || {};
+
+      let matched: any[] = [];
+
+      if (complaintId && typeof complaintId === 'string' && complaintId.trim()) {
+        const single = complaintService.getById(complaintId.trim());
+        if (single) {
+          matched = [single];
+        }
+      } else if (citizenId) {
+        matched = complaintService.getByCitizenId(citizenId);
+      } else {
+        matched = complaintService.getAll().slice(0, 5);
+      }
+
+      if (statusFilter && typeof statusFilter === 'string' && statusFilter.trim()) {
+        const normStatus = statusFilter.trim().toLowerCase();
+        matched = matched.filter((c) => c.status.toLowerCase() === normStatus);
+      }
+
+      const formattedComplaints: CitizenIssueQueryResult[] = matched.slice(0, 5).map((c) => ({
+        id: c.id,
+        title: c.title,
+        category: c.category,
+        status: c.status,
+        priority: c.priority || c.severity,
+        department: c.assignedDepartment,
+        address: c.location?.address,
+        landmark: c.location?.landmark,
+        district: c.location?.district,
+        createdAt: c.createdAt,
+        updatedAt: c.updatedAt,
+        resolutionSummary: c.resolution?.notes || (c as any).resolutionSummary || null,
+      }));
+
+      return {
+        response: {
+          found: formattedComplaints.length > 0,
+          count: formattedComplaints.length,
+          complaints: formattedComplaints,
+        },
+        complaints: formattedComplaints,
+      };
+    }
+
+    return {
+      response: { error: `Tool ${name} not recognized` },
+      complaints: [],
+    };
+  };
+
   try {
-    const { text, modelUsed, modelLabel } = await callGeminiWithFallback(
+    const { text, referencedComplaints, modelUsed, modelLabel } = await callGeminiChatWithTools(
       ai,
       prompt,
       AI_CHAT_ASSISTANT_SYSTEM_INSTRUCTION,
-      12000,
-      'text/plain'
+      executeTool,
+      14000
     );
 
     return res.json({
       reply: text,
+      referencedComplaints,
       provider: 'Gemini',
       modelUsed,
       modelLabel,

@@ -157,31 +157,8 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </form>
 
-          {/* Controls: AI Indicator, Firebase Status, User Profile, Notifications, Demo Reset */}
+          {/* Controls: User Profile, Notifications, Demo Reset */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* AI Provider Indicator Badge */}
-            <div
-              id="header-ai-provider-badge"
-              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full clay-badge bg-white text-[11px] font-mono text-slate-700"
-              title={`Decision-Support AI: ${aiProviderType === 'Gemini' ? 'gemini-3.1-flash-lite (fallback: gemini-3.5-flash-lite)' : 'Demo Rule-Based Expert System'}`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-              <span className="text-slate-500 font-medium">AI:</span>
-              <span className="text-slate-900 font-semibold">
-                {aiProviderType === 'Gemini' ? 'Gemini 3.1 Flash Lite' : 'Demo AI'}
-              </span>
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" title="Active" />
-            </div>
-
-            {/* Cloud Firestore Persistence Live Indicator */}
-            <div
-              className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full clay-badge-amber text-[10px] font-mono"
-              title="Firebase Firestore live database connected"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-              <span className="font-semibold">Firestore Live</span>
-            </div>
-
             {/* Authenticated User Profile & Role Indicator */}
             <button
               type="button"

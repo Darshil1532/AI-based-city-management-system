@@ -5,8 +5,8 @@ import { speechService } from '../../services/ai/speechRecognitionService';
 import { aiChatService, ChatMessage, GeneratedComplaintDraft } from '../../services/ai/aiChatService';
 import { LocationCoordinates, ComplaintCategory, PriorityLevel } from '../../types';
 import { PriorityBadge } from '../common/PriorityBadge';
+import { StatusBadge } from '../common/StatusBadge';
 import {
-  Sparkles,
   Mic,
   Send,
   X,
@@ -25,6 +25,7 @@ import {
   ExternalLink,
   ShieldCheck,
   RefreshCw,
+  Landmark,
 } from 'lucide-react';
 
 const CATEGORIES: ComplaintCategory[] = [
@@ -306,13 +307,18 @@ export const AICityAssistantModal: React.FC = () => {
         .filter((m) => m.id !== 'welcome')
         .map((m) => ({ role: m.role, content: m.content }));
 
-      const response = await aiChatService.sendChatMessage(historyPayload, userCoords);
+      const response = await aiChatService.sendChatMessage(
+        historyPayload,
+        userCoords,
+        currentUser?.id
+      );
 
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
         role: 'model',
         content: response.reply,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        referencedComplaints: response.referencedComplaints,
       };
 
       setMessages((prev) => [...prev, aiMsg]);
@@ -484,7 +490,7 @@ export const AICityAssistantModal: React.FC = () => {
             aria-label="Open SmartCity AI Civic Assistant"
           >
             <div className="relative">
-              <Sparkles className="w-5 h-5 text-blue-400 group-hover:rotate-12 transition-transform" />
+              <ShieldCheck className="w-5 h-5 text-blue-400 group-hover:scale-105 transition-transform" />
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-slate-900 animate-pulse" />
             </div>
             <div className="flex flex-col text-left">
@@ -515,7 +521,7 @@ export const AICityAssistantModal: React.FC = () => {
           <div className="px-4 py-3.5 border-b border-slate-200/60 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-400">
-                <Sparkles className="w-5 h-5" />
+                <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -856,6 +862,72 @@ export const AICityAssistantModal: React.FC = () => {
                         }`}
                       >
                         <p className="whitespace-pre-wrap">{m.content}</p>
+
+                        {/* Interactive Citizen Issue Status Cards */}
+                        {!isUser && m.referencedComplaints && m.referencedComplaints.length > 0 && (
+                          <div className="mt-3 space-y-2.5 pt-2.5 border-t border-slate-200/70">
+                            <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                              <span className="flex items-center gap-1.5">
+                                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                                <span>Verified Municipal Issue Records ({m.referencedComplaints.length})</span>
+                              </span>
+                            </div>
+                            {m.referencedComplaints.map((comp) => (
+                              <div
+                                key={comp.id}
+                                className="bg-white/95 rounded-xl p-3 border border-slate-200/80 shadow-xs space-y-2 text-left"
+                              >
+                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                  <span className="font-mono text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/60">
+                                    {comp.id}
+                                  </span>
+                                  <StatusBadge status={comp.status as any} size="sm" />
+                                </div>
+
+                                <div className="space-y-0.5">
+                                  <h5 className="font-bold text-slate-900 text-xs leading-tight">
+                                    {comp.title}
+                                  </h5>
+                                  <div className="text-[11px] text-slate-500 flex items-center gap-1">
+                                    <span className="font-medium text-slate-700">{comp.category}</span>
+                                    {comp.department && (
+                                      <>
+                                        <span>•</span>
+                                        <span>{comp.department}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {comp.address && (
+                                  <div className="flex items-start gap-1.5 text-[10px] text-slate-600 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                                    <MapPin className="w-3 h-3 text-slate-400 mt-0.5 shrink-0" />
+                                    <span className="line-clamp-2">{comp.address}</span>
+                                  </div>
+                                )}
+
+                                {comp.resolutionSummary && (
+                                  <div className="text-[10px] text-emerald-800 bg-emerald-50/80 p-1.5 rounded-lg border border-emerald-200/50">
+                                    <span className="font-semibold">Resolution: </span>
+                                    {comp.resolutionSummary}
+                                  </div>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setIsOpen(false);
+                                    navigate(`/track?id=${encodeURIComponent(comp.id)}`);
+                                  }}
+                                  className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold transition-colors shadow-xs"
+                                >
+                                  <span>Track Live Ticket</span>
+                                  <ArrowRight className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <span className="text-[10px] text-slate-400 mt-1 px-1 font-mono">
                         {m.timestamp}
@@ -896,7 +968,7 @@ export const AICityAssistantModal: React.FC = () => {
                 {/* Synthesizing Draft Indicator */}
                 {isSynthesizingDraft && (
                   <div className="flex items-center gap-2 text-xs text-blue-600 font-semibold p-2 bg-blue-50 rounded-xl clay-inset">
-                    <Sparkles className="w-4 h-4 animate-spin text-blue-600" />
+                    <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
                     <span>Synthesizing category, severity, and location from conversation...</span>
                   </div>
                 )}

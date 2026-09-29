@@ -1,11 +1,27 @@
 import { ComplaintCategory, SeverityLevel, LocationCoordinates } from '../../types';
 
+export interface ReferencedComplaint {
+  id: string;
+  title: string;
+  category: string;
+  status: string;
+  priority?: string;
+  department?: string;
+  address?: string;
+  landmark?: string;
+  district?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  resolutionSummary?: string | null;
+}
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'model';
   content: string;
   timestamp: string;
   isStreaming?: boolean;
+  referencedComplaints?: ReferencedComplaint[];
 }
 
 export interface GeneratedComplaintDraft {
@@ -28,8 +44,14 @@ export interface GeneratedComplaintDraft {
 class AIChatService {
   async sendChatMessage(
     messages: Array<{ role: 'user' | 'model'; content: string }>,
-    userLocation?: LocationCoordinates
-  ): Promise<{ reply: string; modelUsed: string; modelLabel: string }> {
+    userLocation?: LocationCoordinates,
+    citizenId?: string
+  ): Promise<{
+    reply: string;
+    referencedComplaints?: ReferencedComplaint[];
+    modelUsed: string;
+    modelLabel: string;
+  }> {
     const res = await fetch('/api/ai/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -42,8 +64,9 @@ class AIChatService {
               address: userLocation.address,
             }
           : undefined,
+        citizenId,
       }),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(18000),
     });
 
     if (!res.ok) {

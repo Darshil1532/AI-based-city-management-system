@@ -112,6 +112,7 @@ export const ChatRequestSchema = z.object({
       address: z.string().max(300).optional(),
     })
     .optional(),
+  citizenId: z.string().max(100).optional(),
 });
 
 // Generate complaint from conversation request schema
