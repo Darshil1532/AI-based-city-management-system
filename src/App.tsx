@@ -69,7 +69,7 @@ const AppLayout: React.FC = () => {
         />
 
         {/* Content View Area */}
-        <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 max-w-full">
+        <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 max-w-full scroll-smooth overscroll-y-contain">
           <Routes>
             {/* Root redirects to Citizen Home */}
             <Route path="/" element={<Navigate to="/citizen/dashboard" replace />} />
