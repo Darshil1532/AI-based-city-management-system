@@ -18,7 +18,8 @@ export async function callGeminiWithFallback(
   ai: GoogleGenAI,
   prompt: string,
   systemInstruction: string,
-  timeoutMs: number = 10000
+  timeoutMs: number = 10000,
+  responseMimeType: string = 'application/json'
 ): Promise<{ text: string; modelUsed: string; modelLabel: string }> {
   const primaryModel = GEMINI_PRIMARY_MODEL;
   const fallbackModel = GEMINI_FALLBACK_MODEL;
@@ -32,7 +33,7 @@ export async function callGeminiWithFallback(
       contents: prompt,
       config: {
         systemInstruction,
-        responseMimeType: 'application/json',
+        responseMimeType,
         abortSignal: primaryController.signal,
       },
     });
@@ -67,7 +68,7 @@ export async function callGeminiWithFallback(
       contents: prompt,
       config: {
         systemInstruction,
-        responseMimeType: 'application/json',
+        responseMimeType,
         abortSignal: fallbackController.signal,
       },
     });

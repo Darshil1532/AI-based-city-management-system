@@ -8,6 +8,7 @@ import { SignInModal } from './components/common/SignInModal';
 import { KeyboardShortcutsModal } from './components/common/KeyboardShortcutsModal';
 import { KeyboardShortcutFeedback } from './components/common/KeyboardShortcutFeedback';
 import { GlobalCommandBar } from './components/common/GlobalCommandBar';
+import { AICityAssistantModal } from './components/ai/AICityAssistantModal';
 import { useGlobalKeyboardShortcuts } from './utils/useGlobalKeyboardShortcuts';
 import { AdminRouteGuard } from './components/common/AdminRouteGuard';
 
@@ -56,6 +57,9 @@ const AppLayout: React.FC = () => {
 
       {/* Ephemeral Toast Feedback for Active Shortcut Sequences */}
       <KeyboardShortcutFeedback feedback={feedback} />
+
+      {/* Floating AI Civic Assistant (Voice & Chat with Gemini 3.1 Flash Lite) */}
+      <AICityAssistantModal />
 
       {/* Top Bar Header */}
       <Header onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)} />

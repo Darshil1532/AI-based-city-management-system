@@ -13,12 +13,19 @@ import {
   GeminiOutputSchema,
   InsightsRequestSchema,
   GeminiInsightsSchema,
+  ChatRequestSchema,
+  GenerateComplaintRequestSchema,
+  GeneratedComplaintOutputSchema,
 } from '../ai/schemas';
 import {
   AI_CLASSIFY_SYSTEM_INSTRUCTION,
   buildClassificationPrompt,
   AI_INSIGHTS_SYSTEM_INSTRUCTION,
   buildInsightsPrompt,
+  AI_CHAT_ASSISTANT_SYSTEM_INSTRUCTION,
+  buildCityAssistantPrompt,
+  AI_COMPLAINT_GENERATOR_SYSTEM_INSTRUCTION,
+  buildComplaintGenerationPrompt,
 } from '../ai/prompts';
 
 export const aiRouter = Router();
@@ -239,3 +246,135 @@ aiRouter.post('/ai/insights', aiRateLimiter, async (req: Request, res: Response)
     });
   }
 });
+
+// POST /api/ai/chat - Dynamic civic assistant conversation using Gemini 3.1 Flash Lite
+aiRouter.post('/ai/chat', aiRateLimiter, async (req: Request, res: Response) => {
+  const reqValidation = ChatRequestSchema.safeParse(req.body);
+  if (!reqValidation.success) {
+    return res.status(400).json({
+      error: 'Invalid chat request',
+      issues: reqValidation.error.flatten(),
+    });
+  }
+
+  const { messages, userLocation } = reqValidation.data;
+  const ai = getGeminiClient();
+
+  if (!ai) {
+    return res.status(503).json({
+      error: 'Gemini service unavailable',
+      message: 'GEMINI_API_KEY is not configured in server environment.',
+      code: 'GEMINI_UNAVAILABLE',
+    });
+  }
+
+  const conversationHistory = messages.map((m) => ({
+    role: m.role === 'assistant' ? ('model' as const) : m.role,
+    content: m.content.slice(0, 3000),
+  }));
+
+  const prompt = buildCityAssistantPrompt({
+    conversationHistory,
+    userLocation,
+  });
+
+  try {
+    const { text, modelUsed, modelLabel } = await callGeminiWithFallback(
+      ai,
+      prompt,
+      AI_CHAT_ASSISTANT_SYSTEM_INSTRUCTION,
+      12000,
+      'text/plain'
+    );
+
+    return res.json({
+      reply: text,
+      provider: 'Gemini',
+      modelUsed,
+      modelLabel,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: any) {
+    console.error('[Server Gemini Chat Error]:', err?.message || err);
+    return res.status(503).json({
+      error: 'Chat response unavailable',
+      message: 'Unable to communicate with AI model right now.',
+      code: 'AI_CHAT_ERROR',
+    });
+  }
+});
+
+// POST /api/ai/generate-complaint - Synthesizes structured complaint from conversation transcript
+aiRouter.post('/ai/generate-complaint', aiRateLimiter, async (req: Request, res: Response) => {
+  const reqValidation = GenerateComplaintRequestSchema.safeParse(req.body);
+  if (!reqValidation.success) {
+    return res.status(400).json({
+      error: 'Invalid generate complaint request',
+      issues: reqValidation.error.flatten(),
+    });
+  }
+
+  const { conversationText, userLocation, hasImage } = reqValidation.data;
+  const ai = getGeminiClient();
+
+  if (!ai) {
+    return res.status(503).json({
+      error: 'Gemini service unavailable',
+      message: 'GEMINI_API_KEY is not configured in server environment.',
+      code: 'GEMINI_UNAVAILABLE',
+    });
+  }
+
+  const prompt = buildComplaintGenerationPrompt({
+    conversationText: conversationText.slice(0, 8000),
+    userLocation,
+    hasImage,
+  });
+
+  try {
+    const { text, modelUsed, modelLabel } = await callGeminiWithFallback(
+      ai,
+      prompt,
+      AI_COMPLAINT_GENERATOR_SYSTEM_INSTRUCTION,
+      15000,
+      'application/json'
+    );
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) {
+        parsed = JSON.parse(match[0]);
+      } else {
+        throw new Error('Could not parse JSON response from Gemini');
+      }
+    }
+
+    const outputValidation = GeneratedComplaintOutputSchema.safeParse(parsed);
+    if (!outputValidation.success) {
+      console.warn('[Generated Complaint validation issue]:', outputValidation.error.flatten());
+      return res.status(502).json({
+        error: 'Invalid AI generated schema',
+        details: outputValidation.error.flatten(),
+      });
+    }
+
+    return res.json({
+      ...outputValidation.data,
+      provider: 'Gemini',
+      providerLabel: modelLabel,
+      modelUsed,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: any) {
+    console.error('[Server Gemini Generate Complaint Error]:', err?.message || err);
+    return res.status(503).json({
+      error: 'Failed to synthesize complaint',
+      message: err?.message || 'Unable to generate complaint from conversation.',
+      code: 'AI_SYNTHESIS_ERROR',
+    });
+  }
+});
+

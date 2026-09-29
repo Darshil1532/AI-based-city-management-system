@@ -93,3 +93,55 @@ export const GeminiInsightItemSchema = z.object({
 export const GeminiInsightsSchema = z.object({
   insights: z.array(GeminiInsightItemSchema),
 });
+
+// Chat request schema
+export const ChatRequestSchema = z.object({
+  messages: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'model', 'assistant']),
+        content: z.string().min(1).max(3000),
+      })
+    )
+    .min(1)
+    .max(50),
+  userLocation: z
+    .object({
+      latitude: z.number().min(-90).max(90),
+      longitude: z.number().min(-180).max(180),
+      address: z.string().max(300).optional(),
+    })
+    .optional(),
+});
+
+// Generate complaint from conversation request schema
+export const GenerateComplaintRequestSchema = z.object({
+  conversationText: z.string().min(5).max(10000),
+  userLocation: z
+    .object({
+      latitude: z.number().min(-90).max(90),
+      longitude: z.number().min(-180).max(180),
+      address: z.string().max(300).optional(),
+      landmark: z.string().max(150).optional(),
+      district: z.string().max(100).optional(),
+    })
+    .optional(),
+  hasImage: z.boolean().optional(),
+});
+
+// Generated complaint output schema
+export const GeneratedComplaintOutputSchema = z.object({
+  title: z.string().min(3).max(200),
+  category: ComplaintCategorySchema,
+  severity: PriorityLevelSchema,
+  description: z.string().min(10).max(2000),
+  location: z.object({
+    address: z.string().min(3).max(300),
+    landmark: z.string().max(150).optional(),
+    district: z.string().max(100).optional(),
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+  }),
+  confidence: z.number().min(0.5).max(1).default(0.95),
+});
+
