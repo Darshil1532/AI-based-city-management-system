@@ -17,7 +17,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   /* GPU-accelerated fixed ambient backdrop layer that eliminates scroll repaints */
@@ -34,13 +34,6 @@
       radial-gradient(circle at 50% 85%, rgba(241, 245, 249, 0.8) 0%, transparent 60%);
     transform: translate3d(0, 0, 0);
     will-change: transform;
-  }
-
-  /* Hardware-accelerated smooth scrolling on main viewport */
-  main {
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
   }
 }
 

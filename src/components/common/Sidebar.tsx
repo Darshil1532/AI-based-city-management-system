@@ -119,7 +119,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const items = activePersona === 'admin' ? adminNavItems : citizenNavItems;
 
   return (
-    <aside className="w-64 clay-sidebar flex flex-col shrink-0 min-h-[calc(100vh-4rem)]">
+    <aside className="w-64 clay-sidebar flex flex-col shrink-0 sticky top-16 h-[calc(100vh-4rem)]">
       {/* Context Badge */}
       <div className="p-4 border-b border-slate-200/50 bg-white/40">
         <div className="flex items-center justify-between">

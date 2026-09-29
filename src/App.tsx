@@ -61,7 +61,7 @@ const AppLayout: React.FC = () => {
       <Header onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)} />
 
       {/* Main Workspace Body with Sidebar */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex">
         {/* Sidebar */}
         <Sidebar
           isOpenMobile={mobileMenuOpen}
@@ -69,7 +69,7 @@ const AppLayout: React.FC = () => {
         />
 
         {/* Content View Area */}
-        <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 max-w-full scroll-smooth overscroll-y-contain">
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 max-w-full min-w-0">
           <Routes>
             {/* Root redirects to Citizen Home */}
             <Route path="/" element={<Navigate to="/citizen/dashboard" replace />} />
