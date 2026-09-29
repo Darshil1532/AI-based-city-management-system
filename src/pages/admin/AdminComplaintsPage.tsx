@@ -175,22 +175,22 @@ export const AdminComplaintsPage: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1 font-mono">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-900" />
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-500 mb-1.5 font-mono">
+            <span className="w-2 h-2 rounded-full bg-blue-500 shadow-sm" />
             <span>MUNICIPAL AUDIT REPOSITORY</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
             Administrative Complaints Ledger
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Full directory of civic issue submissions with citizen input, AI triage recommendations, and authorized administrator rulings.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center gap-2.5 self-start sm:self-auto">
           <Link
             to="/admin/map"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-2xs transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl clay-btn text-slate-700 hover:text-slate-900 text-xs font-bold transition-all shadow-sm"
           >
             <span>View on GIS Map</span>
             <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
@@ -199,19 +199,19 @@ export const AdminComplaintsPage: React.FC = () => {
       </div>
 
       {/* Quick Status Tabs */}
-      <div className="flex items-center gap-1 border-b border-slate-200 pb-2 overflow-x-auto">
+      <div className="flex items-center gap-2 p-1.5 clay-card rounded-2xl overflow-x-auto w-fit max-w-full">
         <button
           type="button"
           onClick={() => setActiveTab('all')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
             activeTab === 'all'
-              ? 'bg-slate-900 text-white shadow-2xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              ? 'clay-btn clay-btn-primary text-white scale-102'
+              : 'clay-btn text-slate-600 hover:text-slate-900'
           }`}
           title="Shortcut: Press 1"
         >
           <span>All Complaints ({complaints.length})</span>
-          <kbd className={`text-[9px] font-mono font-bold px-1 rounded ${activeTab === 'all' ? 'bg-slate-700 text-slate-200' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+          <kbd className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md ${activeTab === 'all' ? 'bg-white/20 text-white' : 'clay-inset text-slate-500'}`}>
             1
           </kbd>
         </button>
@@ -219,16 +219,16 @@ export const AdminComplaintsPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveTab('pending')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
             activeTab === 'pending'
-              ? 'bg-amber-600 text-white shadow-2xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              ? 'clay-btn clay-badge-amber text-amber-900 scale-102 border-amber-300'
+              : 'clay-btn text-slate-600 hover:text-slate-900'
           }`}
           title="Shortcut: Press 2"
         >
-          <Clock className="w-3.5 h-3.5" />
+          <Clock className="w-3.5 h-3.5 text-amber-600" />
           <span>Pending Review ({complaints.filter((c) => c.status === 'submitted').length})</span>
-          <kbd className={`text-[9px] font-mono font-bold px-1 rounded ${activeTab === 'pending' ? 'bg-amber-700 text-amber-100' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+          <kbd className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md ${activeTab === 'pending' ? 'bg-amber-200/80 text-amber-900' : 'clay-inset text-slate-500'}`}>
             2
           </kbd>
         </button>
@@ -236,16 +236,16 @@ export const AdminComplaintsPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveTab('high_priority')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
             activeTab === 'high_priority'
-              ? 'bg-rose-600 text-white shadow-2xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              ? 'clay-btn clay-badge-rose text-rose-800 scale-102 border-rose-300'
+              : 'clay-btn text-slate-600 hover:text-slate-900'
           }`}
           title="Shortcut: Press 3"
         >
-          <AlertTriangle className="w-3.5 h-3.5" />
+          <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
           <span>High Priority ({complaints.filter((c) => c.priority === 'High' && c.status !== 'resolved').length})</span>
-          <kbd className={`text-[9px] font-mono font-bold px-1 rounded ${activeTab === 'high_priority' ? 'bg-rose-700 text-rose-100' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+          <kbd className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md ${activeTab === 'high_priority' ? 'bg-rose-200/80 text-rose-900' : 'clay-inset text-slate-500'}`}>
             3
           </kbd>
         </button>
@@ -253,26 +253,26 @@ export const AdminComplaintsPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveTab('resolved')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
             activeTab === 'resolved'
-              ? 'bg-emerald-700 text-white shadow-2xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              ? 'clay-btn clay-badge-emerald text-emerald-900 scale-102 border-emerald-300'
+              : 'clay-btn text-slate-600 hover:text-slate-900'
           }`}
           title="Shortcut: Press 4"
         >
-          <CheckCircle className="w-3.5 h-3.5" />
+          <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
           <span>Resolved ({complaints.filter((c) => c.status === 'resolved').length})</span>
-          <kbd className={`text-[9px] font-mono font-bold px-1 rounded ${activeTab === 'resolved' ? 'bg-emerald-800 text-emerald-100' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+          <kbd className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md ${activeTab === 'resolved' ? 'bg-emerald-200/80 text-emerald-900' : 'clay-inset text-slate-500'}`}>
             4
           </kbd>
         </button>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs p-4 flex flex-col md:flex-row gap-3">
+      <div className="clay-card rounded-3xl p-5 flex flex-col md:flex-row gap-3.5">
         {/* Search */}
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             id="page-search-input"
             ref={searchInputRef}
@@ -280,18 +280,18 @@ export const AdminComplaintsPage: React.FC = () => {
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Search complaints... (press 'f' to focus)"
-            className="w-full pl-9 pr-14 py-2 bg-slate-50 border border-slate-200/90 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
+            className="w-full pl-10 pr-14 py-2.5 bg-slate-50/80 rounded-xl clay-inset text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none font-medium"
           />
           {searchQuery ? (
             <button
               type="button"
               onClick={() => handleSearchChange('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 hover:text-slate-600 cursor-pointer font-mono"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 hover:text-slate-600 cursor-pointer font-mono font-bold"
             >
               Clear
             </button>
           ) : (
-            <kbd className="hidden md:inline-flex items-center justify-center absolute right-2.5 top-1/2 -translate-y-1/2 h-4 px-1 text-[9px] font-mono text-slate-400 bg-white rounded border border-slate-200 pointer-events-none">
+            <kbd className="hidden md:inline-flex items-center justify-center absolute right-3 top-1/2 -translate-y-1/2 h-5 px-1.5 text-[9px] font-mono font-bold text-slate-400 bg-white rounded-md shadow-xs pointer-events-none">
               f
             </kbd>
           )}
@@ -302,7 +302,7 @@ export const AdminComplaintsPage: React.FC = () => {
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
           aria-label="Filter by category"
-          className="px-3 py-2 text-xs bg-slate-50 border border-slate-200/90 rounded-lg focus:outline-none text-slate-700"
+          className="px-3.5 py-2.5 text-xs bg-slate-50/80 rounded-xl clay-inset focus:outline-none text-slate-700 font-bold"
         >
           <option value="all">All Categories</option>
           <option value="Pothole / Road">Pothole / Road</option>
@@ -318,7 +318,7 @@ export const AdminComplaintsPage: React.FC = () => {
           value={selectedPriority}
           onChange={(e) => setSelectedPriority(e.target.value)}
           aria-label="Filter by priority"
-          className="px-3 py-2 text-xs bg-slate-50 border border-slate-200/90 rounded-lg focus:outline-none text-slate-700"
+          className="px-3.5 py-2.5 text-xs bg-slate-50/80 rounded-xl clay-inset focus:outline-none text-slate-700 font-bold"
         >
           <option value="all">All Priorities</option>
           <option value="High">High</option>
@@ -331,7 +331,7 @@ export const AdminComplaintsPage: React.FC = () => {
           value={selectedStatus}
           onChange={(e) => setSelectedStatus(e.target.value)}
           aria-label="Filter by status"
-          className="px-3 py-2 text-xs bg-slate-50 border border-slate-200/90 rounded-lg focus:outline-none text-slate-700"
+          className="px-3.5 py-2.5 text-xs bg-slate-50/80 rounded-xl clay-inset focus:outline-none text-slate-700 font-bold"
         >
           <option value="all">All Statuses</option>
           <option value="submitted">Submitted</option>
@@ -345,7 +345,7 @@ export const AdminComplaintsPage: React.FC = () => {
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as any)}
           aria-label="Sort ledger"
-          className="px-3 py-2 text-xs bg-slate-50 border border-slate-200/90 rounded-lg focus:outline-none text-slate-700 font-medium"
+          className="px-3.5 py-2.5 text-xs bg-slate-50/80 rounded-xl clay-inset focus:outline-none text-slate-700 font-bold"
         >
           <option value="date_desc">Newest First</option>
           <option value="date_asc">Oldest First</option>
@@ -354,10 +354,12 @@ export const AdminComplaintsPage: React.FC = () => {
       </div>
 
       {/* Decision-Support Banner */}
-      <div className="bg-blue-50/60 border border-blue-200/70 rounded-xl p-3.5 flex items-start gap-3 text-xs text-blue-900">
-        <Sparkles className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+      <div className="clay-card rounded-2xl p-4 flex items-start gap-3.5 text-xs text-blue-900 border border-blue-200/50 bg-blue-50/40">
+        <div className="w-8 h-8 rounded-xl clay-badge clay-badge-blue flex items-center justify-center shrink-0">
+          <Sparkles className="w-4 h-4 text-blue-600 animate-pulse" />
+        </div>
         <div className="space-y-0.5">
-          <span className="font-bold">AI-Assisted Decision Support Active:</span>
+          <span className="font-bold font-mono uppercase tracking-wide text-[11px] text-blue-900">AI-Assisted Decision Support Active:</span>
           <p className="text-blue-800 text-[11px] leading-relaxed">
             Every record displays both the automated AI model classification/priority recommendations and the administrator's authorized determinations. AI recommendations require human administrative approval before field dispatch.
           </p>
@@ -365,7 +367,7 @@ export const AdminComplaintsPage: React.FC = () => {
       </div>
 
       {/* Complaints Table */}
-      <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
+      <div className="clay-card rounded-3xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
@@ -508,10 +510,10 @@ export const AdminComplaintsPage: React.FC = () => {
                             e.stopPropagation();
                             navigate(`/admin/complaint/${c.id}`);
                           }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-semibold transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl clay-btn text-slate-800 text-xs font-bold transition-all cursor-pointer"
                         >
                           <span>Review</span>
-                          <ChevronRight className="w-3 h-3 text-slate-500" />
+                          <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
                         </button>
                       </td>
                     </tr>
@@ -523,22 +525,22 @@ export const AdminComplaintsPage: React.FC = () => {
         </div>
 
         {/* Ledger Footer */}
-        <div className="py-3 px-4 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-mono">
+        <div className="py-4 px-6 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
           <div className="flex items-center gap-3">
             <span>Displaying {filteredComplaints.length} of {complaints.length} municipal records</span>
             {selectedIds.length > 0 && (
-              <span className="text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+              <span className="text-blue-800 font-bold clay-badge clay-badge-blue px-2.5 py-0.5 rounded-lg">
                 {selectedIds.length} selected for bulk actions
               </span>
             )}
           </div>
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1 text-slate-700">
-              <span className="w-2 h-2 rounded-full bg-blue-500" />
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5 text-slate-700 font-bold">
+              <span className="w-2 h-2 rounded-full bg-blue-500 shadow-sm" />
               AI Guided
             </span>
-            <span className="flex items-center gap-1 text-slate-700">
-              <span className="w-2 h-2 rounded-full bg-slate-900" />
+            <span className="flex items-center gap-1.5 text-slate-700 font-bold">
+              <span className="w-2 h-2 rounded-full bg-slate-900 shadow-sm" />
               Admin Authority
             </span>
           </div>

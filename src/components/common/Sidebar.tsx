@@ -119,14 +119,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const items = activePersona === 'admin' ? adminNavItems : citizenNavItems;
 
   return (
-    <aside className="w-64 bg-white border-r border-slate-200/80 flex flex-col shrink-0 min-h-[calc(100vh-4rem)]">
+    <aside className="w-64 clay-sidebar flex flex-col shrink-0 min-h-[calc(100vh-4rem)]">
       {/* Context Badge */}
-      <div className="p-4 border-b border-slate-100/90 bg-slate-50/40">
+      <div className="p-4 border-b border-slate-200/50 bg-white/40">
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
             {activePersona === 'admin' ? 'Administrative Suite' : 'Citizen Services'}
           </span>
-          <span className="flex items-center gap-1.5 text-[10px] text-emerald-700 font-semibold bg-emerald-50/90 border border-emerald-200/60 px-2 py-0.5 rounded-full">
+          <span className="flex items-center gap-1.5 text-[10px] text-emerald-700 font-semibold clay-badge-emerald px-2.5 py-0.5 rounded-full">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             Live System
           </span>
@@ -139,7 +139,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
       </div>
 
       {/* Navigation List */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+      <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -156,9 +156,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
               className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
                 isActive
                   ? activePersona === 'admin'
-                    ? 'bg-slate-900 text-white shadow-2xs font-semibold'
-                    : 'bg-blue-600 text-white shadow-2xs font-semibold'
-                  : 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-900'
+                    ? 'clay-btn-primary text-white shadow-xs font-semibold'
+                    : 'clay-btn-blue text-white shadow-xs font-semibold'
+                  : 'text-slate-600 hover:bg-white/90 hover:shadow-2xs hover:text-slate-900'
               }`}
             >
               <div className="flex items-center gap-2.5 truncate">
@@ -167,10 +167,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
               </div>
               {item.badge && (
                 <span
-                  className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold shrink-0 ml-1.5 transition-colors ${
+                  className={`text-[10px] px-2 py-0.5 rounded-full font-bold shrink-0 ml-1.5 transition-colors ${
                     isActive
                       ? 'bg-white/20 text-white'
-                      : item.badgeColor || 'bg-slate-100 text-slate-600'
+                      : item.badgeColor || 'clay-badge bg-white text-slate-700'
                   }`}
                 >
                   {item.badge}
@@ -182,9 +182,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
       </nav>
 
       {/* Footer Info Box */}
-      <div className="p-3.5 border border-slate-200/60 bg-slate-50/80 m-3 rounded-xl">
+      <div className="p-3.5 clay-card m-3 rounded-2xl">
         <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
-          <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+          <ShieldCheck className="w-4 h-4 text-blue-600" />
           <span>Decision Support</span>
         </div>
         <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">

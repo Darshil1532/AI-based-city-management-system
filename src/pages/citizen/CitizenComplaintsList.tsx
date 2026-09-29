@@ -46,17 +46,17 @@ export const CitizenComplaintsList: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
             Your Submitted Complaints
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 mt-0.5 font-medium">
             Private citizen record. Only municipal issues registered by your citizen account are displayed here.
           </p>
         </div>
 
         <Link
           to="/citizen/report"
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors shadow-xs shrink-0 self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-4.5 py-2.5 clay-btn clay-btn-primary text-xs font-bold rounded-2xl transition-all shrink-0 self-start sm:self-auto cursor-pointer"
         >
           <PlusCircle className="w-4 h-4" />
           <span>Report New Issue</span>
@@ -64,25 +64,25 @@ export const CitizenComplaintsList: React.FC = () => {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-2xs p-4 flex flex-col md:flex-row gap-3">
+      <div className="clay-card rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row gap-3.5">
         {/* Search */}
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by ID (e.g. SC1024), description, or street..."
-            className="w-full pl-9 pr-3.5 py-2 text-xs bg-slate-50 text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-10 pr-4 py-2.5 text-xs clay-inset rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 font-medium"
           />
         </div>
 
         {/* Category filter */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-3 py-2 text-xs bg-slate-50 text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+            className="px-3 py-2.5 text-xs clay-inset rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-300 font-semibold cursor-pointer"
           >
             <option value="all">All Categories</option>
             <option value="Pothole / Road">Pothole / Road</option>
@@ -98,7 +98,7 @@ export const CitizenComplaintsList: React.FC = () => {
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-3 py-2 text-xs bg-slate-50 text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+            className="px-3 py-2.5 text-xs clay-inset rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-300 font-semibold cursor-pointer"
           >
             <option value="all">All Statuses</option>
             <option value="submitted">Submitted</option>
@@ -110,17 +110,19 @@ export const CitizenComplaintsList: React.FC = () => {
       </div>
 
       {/* Complaints List */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between text-xs text-slate-500">
-          <span className="font-semibold">
+      <div className="clay-card rounded-2xl overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-slate-200/60 flex items-center justify-between text-xs text-slate-500">
+          <span className="font-bold text-slate-700 font-mono">
             Showing {filtered.length} of {complaints.length} complaints
           </span>
         </div>
 
         {filtered.length === 0 ? (
-          <div className="py-12 text-center text-xs text-slate-400 space-y-2">
-            <FileText className="w-8 h-8 text-slate-300 mx-auto" />
-            <p>No complaints matched your search or filters.</p>
+          <div className="py-12 text-center text-xs text-slate-400 space-y-3">
+            <div className="w-12 h-12 rounded-2xl clay-metric-icon bg-slate-100 flex items-center justify-center text-slate-400 mx-auto">
+              <FileText className="w-6 h-6" />
+            </div>
+            <p className="font-semibold text-slate-600">No complaints matched your search or filters.</p>
             <button
               type="button"
               onClick={() => {
@@ -128,7 +130,7 @@ export const CitizenComplaintsList: React.FC = () => {
                 setSelectedCategory('all');
                 setSelectedStatus('all');
               }}
-              className="text-blue-600 hover:underline font-semibold"
+              className="clay-btn clay-btn-secondary px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer"
             >
               Clear filters
             </button>
@@ -139,26 +141,26 @@ export const CitizenComplaintsList: React.FC = () => {
               <div
                 key={c.id}
                 onClick={() => navigate(`/track?id=${c.id}`)}
-                className="p-4 hover:bg-slate-50/80 cursor-pointer transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                className="p-4 sm:p-5 hover:bg-slate-100/50 cursor-pointer transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
               >
                 <div className="space-y-1.5 flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                    <span className="font-mono text-xs font-bold text-indigo-700 bg-indigo-50/80 px-2.5 py-0.5 rounded-lg border border-indigo-100/80 shadow-2xs">
                       {c.id}
                     </span>
                     <span className="text-xs font-bold text-slate-900 truncate">
                       {c.title}
                     </span>
-                    <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                    <span className="text-[11px] font-semibold text-slate-600 bg-slate-100/90 px-2.5 py-0.5 rounded-lg border border-slate-200/60">
                       {c.category}
                     </span>
                   </div>
 
-                  <p className="text-xs text-slate-600 line-clamp-2">
+                  <p className="text-xs text-slate-600 line-clamp-2 font-medium">
                     {c.description}
                   </p>
 
-                  <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
+                  <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 font-medium">
                     <span className="flex items-center gap-1">
                       <MapPin className="w-3 h-3 text-slate-400" />
                       <span className="truncate max-w-xs">{c.location.landmark || c.location.address}</span>
@@ -169,16 +171,16 @@ export const CitizenComplaintsList: React.FC = () => {
                       <span>{new Date(c.createdAt).toLocaleDateString()}</span>
                     </span>
                     <span>•</span>
-                    <span className="text-slate-600 font-medium">
+                    <span className="text-slate-600 font-semibold">
                       Dept: {c.department}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-center">
+                <div className="flex items-center gap-3 shrink-0 self-start sm:self-center">
                   <PriorityBadge priority={c.priority} size="sm" />
                   <StatusBadge status={c.status} size="sm" />
-                  <span className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors">
+                  <span className="clay-btn clay-btn-secondary p-2 rounded-xl text-slate-500">
                     <ArrowRight className="w-4 h-4" />
                   </span>
                 </div>

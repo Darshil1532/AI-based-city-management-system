@@ -22,31 +22,31 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   const config = {
     submitted: {
       label: 'Submitted',
-      classes: 'bg-amber-50 text-amber-800 border border-amber-200/80',
+      classes: 'clay-badge-amber text-amber-900',
       icon: Clock,
       dotClass: 'bg-amber-500',
     },
     assigned: {
       label: 'Assigned',
-      classes: 'bg-sky-50 text-sky-800 border border-sky-200/80',
+      classes: 'clay-badge-blue text-sky-900',
       icon: AlertCircle,
       dotClass: 'bg-sky-500',
     },
     in_progress: {
       label: 'In Progress',
-      classes: 'bg-indigo-50 text-indigo-800 border border-indigo-200/80',
+      classes: 'clay-badge-blue text-indigo-900',
       icon: Wrench,
       dotClass: 'bg-indigo-500',
     },
     resolved: {
       label: 'Resolved',
-      classes: 'bg-emerald-50 text-emerald-800 border border-emerald-200/80',
+      classes: 'clay-badge-emerald text-emerald-900',
       icon: CheckCircle2,
       dotClass: 'bg-emerald-500',
     },
   }[status] || {
     label: status,
-    classes: 'bg-slate-100 text-slate-700 border border-slate-200',
+    classes: 'clay-badge text-slate-700',
     icon: Clock,
     dotClass: 'bg-slate-400',
   };
@@ -55,7 +55,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
 
   return (
     <span
-      className={`inline-flex items-center rounded-full font-medium whitespace-nowrap shadow-xs ${sizeClasses[size]} ${config.classes}`}
+      className={`inline-flex items-center rounded-full font-semibold whitespace-nowrap clay-badge ${sizeClasses[size]} ${config.classes}`}
     >
       {showIcon && <Icon className={size === 'sm' ? 'w-3 h-3' : 'w-3.5 h-3.5'} />}
       <span>{config.label}</span>

@@ -189,21 +189,21 @@ export const AdminDashboard: React.FC = () => {
         <div className="flex items-center gap-2.5">
           <Link
             to="/admin/hotspots"
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white text-slate-700 hover:text-rose-700 hover:border-rose-200 border border-slate-200 text-xs font-semibold transition-all shadow-2xs cursor-pointer"
+            className="clay-btn clay-btn-secondary inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer"
           >
             <Flame className="w-3.5 h-3.5 text-rose-500" />
             <span>Hotspots</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-rose-50 text-rose-700 text-[10px] font-bold border border-rose-200/60">
+            <span className="px-2 py-0.5 rounded-full clay-badge-rose text-[10px] font-bold">
               {hotspots.length}
             </span>
           </Link>
           <Link
             to="/admin/insights"
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white text-slate-700 hover:text-blue-700 hover:border-blue-200 border border-slate-200 text-xs font-semibold transition-all shadow-2xs cursor-pointer"
+            className="clay-btn clay-btn-secondary inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer"
           >
             <Lightbulb className="w-3.5 h-3.5 text-blue-500" />
             <span>AI Insights</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200/60">
+            <span className="px-2 py-0.5 rounded-full clay-badge-blue text-[10px] font-bold">
               {aiInsights.filter((i) => i.status === 'new').length}
             </span>
           </Link>
@@ -213,71 +213,71 @@ export const AdminDashboard: React.FC = () => {
       {/* KPI Cards: Total, Pending, In Progress, Resolved, High Priority */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
         {/* Total Complaints */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-colors">
+        <div className="clay-card clay-card-hover p-4 rounded-2xl">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-mono">Total Intake</span>
-            <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700">
+            <div className="w-9 h-9 rounded-xl clay-metric-icon bg-slate-100 flex items-center justify-center text-slate-700">
               <FileText className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2.5 flex items-baseline gap-1.5">
-            <span className="text-2xl font-bold tracking-tight text-slate-900">{total}</span>
-            <span className="text-[11px] text-slate-400">cases</span>
+            <span className="text-2xl font-black tracking-tight text-slate-900">{total}</span>
+            <span className="text-[11px] text-slate-400 font-medium">cases</span>
           </div>
         </div>
 
         {/* Pending */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-colors">
+        <div className="clay-card clay-card-hover p-4 rounded-2xl">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 font-mono">Needs Triage</span>
-            <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+            <div className="w-9 h-9 rounded-xl clay-metric-icon bg-amber-50 flex items-center justify-center text-amber-600">
               <Clock className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2.5 flex items-baseline gap-1.5">
-            <span className="text-2xl font-bold tracking-tight text-amber-600">{pending}</span>
+            <span className="text-2xl font-black tracking-tight text-amber-600">{pending}</span>
             <span className="text-[11px] text-amber-600/80 font-medium">pending</span>
           </div>
         </div>
 
         {/* In Progress */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-colors">
+        <div className="clay-card clay-card-hover p-4 rounded-2xl">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-sky-600 font-mono">In Progress</span>
-            <div className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center text-sky-600">
+            <div className="w-9 h-9 rounded-xl clay-metric-icon bg-sky-50 flex items-center justify-center text-sky-600">
               <Wrench className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2.5 flex items-baseline gap-1.5">
-            <span className="text-2xl font-bold tracking-tight text-sky-600">{inProgress}</span>
+            <span className="text-2xl font-black tracking-tight text-sky-600">{inProgress}</span>
             <span className="text-[11px] text-sky-600/80 font-medium">dispatched</span>
           </div>
         </div>
 
         {/* Resolved */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-colors">
+        <div className="clay-card clay-card-hover p-4 rounded-2xl">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 font-mono">Resolved</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+            <div className="w-9 h-9 rounded-xl clay-metric-icon bg-emerald-50 flex items-center justify-center text-emerald-600">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2.5 flex items-baseline gap-1.5">
-            <span className="text-2xl font-bold tracking-tight text-emerald-600">{resolved}</span>
+            <span className="text-2xl font-black tracking-tight text-emerald-600">{resolved}</span>
             <span className="text-[11px] text-emerald-600/80 font-medium">closed</span>
           </div>
         </div>
 
         {/* High Priority */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-colors col-span-2 sm:col-span-1">
+        <div className="clay-card clay-card-hover p-4 rounded-2xl col-span-2 sm:col-span-1">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-rose-600 font-mono">High Urgency</span>
-            <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600">
+            <div className="w-9 h-9 rounded-xl clay-metric-icon bg-rose-50 flex items-center justify-center text-rose-600">
               <AlertTriangle className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2.5 flex items-baseline gap-1.5">
-            <span className="text-2xl font-bold tracking-tight text-rose-600">{highPriority}</span>
+            <span className="text-2xl font-black tracking-tight text-rose-600">{highPriority}</span>
             <span className="text-[11px] text-rose-600/80 font-medium">critical</span>
           </div>
         </div>
@@ -287,10 +287,10 @@ export const AdminDashboard: React.FC = () => {
       <AIDecisionDisclaimer />
 
       {/* Filter and Search Bar */}
-      <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs p-4 sm:p-5 space-y-3.5">
+      <div className="clay-card rounded-2xl p-5 space-y-4">
         {/* Quick Status Pill Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
-          <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200/60">
+          <div className="flex items-center gap-2 overflow-x-auto py-0.5">
             {[
               { id: 'all', label: 'All Cases', count: total },
               { id: 'submitted', label: 'Needs Triage', count: pending },
@@ -305,15 +305,15 @@ export const AdminDashboard: React.FC = () => {
                   setStatusFilter(tab.id);
                   setCurrentPage(1);
                 }}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   statusFilter === tab.id
-                    ? 'bg-slate-900 text-white shadow-2xs'
-                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'clay-btn clay-btn-primary shadow-xs'
+                    : 'clay-btn clay-btn-secondary text-slate-600'
                 }`}
               >
                 <span>{tab.label}</span>
                 <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                  statusFilter === tab.id ? 'bg-white/20 text-white' : 'bg-slate-200/70 text-slate-600'
+                  statusFilter === tab.id ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-600 font-mono'
                 }`}>
                   {tab.count}
                 </span>
@@ -338,7 +338,7 @@ export const AdminDashboard: React.FC = () => {
                 setDateFilter('all');
                 setCurrentPage(1);
               }}
-              className="px-2.5 py-1 text-xs font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              className="clay-btn clay-btn-secondary px-3 py-1.5 text-xs font-semibold cursor-pointer"
             >
               Clear filters
             </button>
@@ -375,7 +375,7 @@ export const AdminDashboard: React.FC = () => {
                 setCategoryFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200/90 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+              className="w-full px-3 py-2 text-xs clay-inset bg-slate-50/70 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-300 font-medium cursor-pointer"
             >
               <option value="all">All Categories</option>
               <option value="Pothole / Road">Pothole / Road</option>
@@ -399,7 +399,7 @@ export const AdminDashboard: React.FC = () => {
                 setPriorityFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200/90 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+              className="w-full px-3 py-2 text-xs clay-inset bg-slate-50/70 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-300 font-medium cursor-pointer"
             >
               <option value="all">All Priorities</option>
               <option value="High">High Urgency</option>
@@ -419,7 +419,7 @@ export const AdminDashboard: React.FC = () => {
                 setDepartmentFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200/90 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 truncate"
+              className="w-full px-3 py-2 text-xs clay-inset bg-slate-50/70 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-300 font-medium cursor-pointer truncate"
             >
               <option value="all">All Departments</option>
               <option value="Public Works Department">Public Works</option>
@@ -442,7 +442,7 @@ export const AdminDashboard: React.FC = () => {
                 setDateFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200/90 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+              className="w-full px-3 py-2 text-xs clay-inset bg-slate-50/70 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-300 font-medium cursor-pointer"
             >
               <option value="all">All Time</option>
               <option value="today">Today Only</option>
@@ -453,17 +453,17 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Complaint Table Section */}
-      <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+      <div className="clay-card rounded-2xl overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-slate-200/60 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h2 className="text-sm font-bold text-slate-900 tracking-tight">
               Incident Records ({sortedComplaints.length})
             </h2>
-            <span className="hidden sm:inline-block text-[11px] text-slate-400">
+            <span className="hidden sm:inline-block text-[11px] text-slate-400 font-medium">
               Select any incident to inspect AI confidence scores & dispatch crew
             </span>
           </div>
-          <span className="text-xs font-mono text-slate-500">
+          <span className="text-xs font-mono font-semibold text-slate-600 bg-slate-100/80 px-2 py-0.5 rounded-lg border border-slate-200/60">
             Page {currentPage} of {totalPages}
           </span>
         </div>
@@ -471,7 +471,7 @@ export const AdminDashboard: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="bg-slate-50/70 border-b border-slate-200/80 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
+              <tr className="bg-slate-100/60 border-b border-slate-200/70 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
                 <th className="py-3 px-3 w-10 text-center">
                   <input
                     type="checkbox"
@@ -626,7 +626,7 @@ export const AdminDashboard: React.FC = () => {
                             e.stopPropagation();
                             navigate(`/admin/complaint/${c.id}`);
                           }}
-                          className="px-3 py-1 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-900 hover:text-white border border-slate-200 transition-all shadow-2xs cursor-pointer"
+                          className="clay-btn clay-btn-secondary px-3 py-1 rounded-xl text-xs font-semibold cursor-pointer"
                         >
                           Review
                         </button>
@@ -641,7 +641,7 @@ export const AdminDashboard: React.FC = () => {
 
         {/* Pagination controls */}
         {totalPages > 1 && (
-          <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs">
+          <div className="p-4 border-t border-slate-200/60 flex items-center justify-between text-xs">
             <span className="text-slate-500 font-medium">
               Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
               {Math.min(currentPage * itemsPerPage, sortedComplaints.length)} of{' '}
@@ -652,18 +652,18 @@ export const AdminDashboard: React.FC = () => {
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                className="clay-btn clay-btn-secondary p-1.5 rounded-xl text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <span className="px-3 py-1 font-mono font-semibold text-slate-800">
+              <span className="px-3 py-1 font-mono font-bold text-slate-800 bg-slate-100/70 rounded-lg border border-slate-200/50">
                 {currentPage} / {totalPages}
               </span>
               <button
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                className="clay-btn clay-btn-secondary p-1.5 rounded-xl text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>

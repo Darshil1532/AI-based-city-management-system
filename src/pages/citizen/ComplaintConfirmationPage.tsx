@@ -91,30 +91,30 @@ export const ComplaintConfirmationPage: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
       {/* Top Success Banner */}
-      <div className="bg-white rounded-2xl border border-emerald-200 shadow-sm p-6 text-center space-y-3">
-        <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
-          <CheckCircle2 className="w-7 h-7" />
+      <div className="clay-card rounded-3xl p-8 text-center space-y-4">
+        <div className="w-14 h-14 rounded-2xl clay-metric-icon bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-md">
+          <CheckCircle2 className="w-8 h-8" />
         </div>
 
         <div>
-          <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wider block mb-0.5">
+          <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider block mb-1 font-mono">
             Registration Confirmed
           </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
             Complaint Successfully Submitted
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 max-w-lg mx-auto mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 max-w-lg mx-auto mt-1 font-medium">
             Your complaint has been logged in the Smart City management registry and processed through the AI decision-support module.
           </p>
         </div>
 
         {/* Big ID Card with Copy */}
-        <div className="inline-flex flex-col sm:flex-row items-center gap-3 bg-slate-50 border border-slate-200/80 px-5 py-3 rounded-xl shadow-xs">
+        <div className="inline-flex flex-col sm:flex-row items-center gap-4 clay-inset px-6 py-4 rounded-2xl">
           <div className="text-left">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
+            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider font-mono">
               Unique Complaint Tracking ID
             </span>
-            <span className="font-mono text-xl sm:text-2xl font-black text-blue-600 tracking-tight">
+            <span className="font-mono text-xl sm:text-2xl font-black text-indigo-600 tracking-tight">
               {complaint.id}
             </span>
           </div>
@@ -122,12 +122,12 @@ export const ComplaintConfirmationPage: React.FC = () => {
           <button
             type="button"
             onClick={handleCopyId}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors shadow-2xs"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl clay-btn clay-btn-secondary text-slate-700 text-xs font-semibold cursor-pointer"
           >
             {copied ? (
               <>
                 <Check className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="text-emerald-700">Copied!</span>
+                <span className="text-emerald-700 font-bold">Copied!</span>
               </>
             ) : (
               <>
@@ -142,7 +142,7 @@ export const ComplaintConfirmationPage: React.FC = () => {
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
           <Link
             to={`/track?id=${complaint.id}`}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-xs"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl clay-btn clay-btn-primary text-xs font-bold cursor-pointer"
           >
             <Search className="w-3.5 h-3.5" />
             <span>Track Progress Timeline</span>
@@ -153,50 +153,50 @@ export const ComplaintConfirmationPage: React.FC = () => {
               loginAs('admin');
               navigate(`/admin/complaint/${complaint.id}`);
             }}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors shadow-xs cursor-pointer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl clay-btn clay-btn-secondary text-slate-700 text-xs font-bold cursor-pointer"
           >
-            <Shield className="w-3.5 h-3.5 text-amber-300" />
+            <Shield className="w-3.5 h-3.5 text-indigo-600" />
             <span>Review as Administrator</span>
           </button>
         </div>
       </div>
 
       {/* Complaint Summary Details Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="p-4 clay-card rounded-2xl">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1 font-mono">
             Category
           </span>
           <span className="text-xs font-bold text-slate-900 block">
             {complaint.category}
           </span>
-          <span className="text-[10px] text-slate-500">Citizen reported</span>
+          <span className="text-[10px] text-slate-500 font-medium">Citizen reported</span>
         </div>
 
-        <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+        <div className="p-4 clay-card rounded-2xl">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1 font-mono">
             Current Status
           </span>
           <StatusBadge status={complaint.status} size="sm" />
-          <span className="text-[10px] text-slate-500 block mt-1">
+          <span className="text-[10px] text-slate-500 block mt-1 font-medium">
             Awaiting administrative review
           </span>
         </div>
 
-        <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+        <div className="p-4 clay-card rounded-2xl">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1 font-mono">
             Submitted Time
           </span>
-          <span className="text-xs font-bold text-slate-900 block">
+          <span className="text-xs font-bold text-slate-900 block font-mono">
             {new Date(complaint.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
-          <span className="text-[10px] text-slate-500">
+          <span className="text-[10px] text-slate-500 font-medium">
             {new Date(complaint.createdAt).toLocaleDateString()}
           </span>
         </div>
 
-        <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+        <div className="p-4 clay-card rounded-2xl">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1 font-mono">
             Geographic Location
           </span>
           <span className="text-xs font-bold text-slate-900 block truncate">
@@ -214,7 +214,7 @@ export const ComplaintConfirmationPage: React.FC = () => {
           <h2 className="text-sm font-bold text-slate-900 tracking-tight">
             AI Automated Decision-Support Analysis
           </h2>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 font-medium">
             Initial assessment performed by the SmartCity AI engine for administrative triage
           </p>
         </div>
@@ -223,43 +223,45 @@ export const ComplaintConfirmationPage: React.FC = () => {
 
       {/* Map Location & Photo Preview */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs space-y-2">
+        <div className="clay-card rounded-3xl p-5 space-y-3">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
-            <MapPin className="w-3.5 h-3.5 text-blue-600" />
+            <MapPin className="w-3.5 h-3.5 text-indigo-600" />
             <span>Complaint Location on City Map</span>
           </div>
-          <SmartCityMap
-            singleMarker={{
-              latitude: complaint.location.latitude,
-              longitude: complaint.location.longitude,
-              title: complaint.title,
-              category: complaint.category,
-            }}
-            height="h-56"
-            showFilterControls={false}
-          />
-          <p className="text-[11px] text-slate-500">
+          <div className="rounded-2xl overflow-hidden border border-slate-200/80 shadow-md">
+            <SmartCityMap
+              singleMarker={{
+                latitude: complaint.location.latitude,
+                longitude: complaint.location.longitude,
+                title: complaint.title,
+                category: complaint.category,
+              }}
+              height="h-56"
+              showFilterControls={false}
+            />
+          </div>
+          <p className="text-[11px] text-slate-500 font-medium">
             Address: {complaint.location.address}
           </p>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs space-y-2 flex flex-col justify-between">
+        <div className="clay-card rounded-3xl p-5 space-y-3 flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 mb-2">
               <FileText className="w-3.5 h-3.5 text-slate-600" />
               <span>Reported Description & Evidence</span>
             </div>
-            <p className="text-xs text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100 italic leading-relaxed">
+            <p className="text-xs text-slate-700 clay-inset p-4 rounded-2xl italic leading-relaxed font-medium">
               "{complaint.description}"
             </p>
           </div>
 
           {complaint.image && (
             <div className="mt-3">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5 font-mono">
                 Attached Photo Evidence:
               </span>
-              <div className="h-32 rounded-lg overflow-hidden border border-slate-200">
+              <div className="h-32 rounded-2xl overflow-hidden border border-slate-200 shadow-md">
                 <img
                   src={complaint.image}
                   alt="Complaint attachment"

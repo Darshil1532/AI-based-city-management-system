@@ -73,12 +73,12 @@ export const TrackComplaintPage: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
       {/* Header & Search */}
-      <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs p-6 space-y-4">
+      <div className="clay-card rounded-3xl p-6 sm:p-8 space-y-5">
         <div>
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1 font-mono">
             CIVIC RESOLUTION AUDIT
           </span>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
             Track Incident Status
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -87,27 +87,27 @@ export const TrackComplaintPage: React.FC = () => {
         </div>
 
         {/* Search input */}
-        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2.5">
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={inputId}
               onChange={(e) => setInputId(e.target.value)}
               placeholder="Enter Complaint ID (e.g., SC1024)"
-              className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-slate-50/70 hover:bg-slate-50 focus:bg-white text-slate-900 border border-slate-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-400/10 focus:border-slate-400 font-mono transition-all"
+              className="w-full pl-11 pr-4 py-3 text-xs sm:text-sm clay-inset rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-300 font-mono text-slate-900 transition-all font-semibold"
             />
           </div>
           <button
             type="submit"
-            className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-2xs shrink-0 cursor-pointer"
+            className="px-6 py-3 clay-btn clay-btn-primary text-xs font-bold rounded-2xl transition-all shrink-0 cursor-pointer"
           >
             Track Incident
           </button>
         </form>
 
         {/* Quick sample complaint links */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs text-slate-500">
+        <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-slate-500">
           <span className="font-semibold text-slate-400 font-mono text-[11px]">Quick Samples:</span>
           {complaints.slice(0, 5).map((c) => (
             <button
@@ -118,10 +118,10 @@ export const TrackComplaintPage: React.FC = () => {
                 setSearchedId(c.id);
                 setSearchParams({ id: c.id });
               }}
-              className={`font-mono px-2 py-0.5 rounded-md border text-[11px] transition-all cursor-pointer ${
+              className={`font-mono px-3 py-1 rounded-xl text-[11px] transition-all cursor-pointer font-bold ${
                 searchedId === c.id
-                  ? 'bg-slate-900 text-white border-slate-900 font-bold shadow-2xs'
-                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200/80'
+                  ? 'clay-btn clay-btn-primary text-white shadow-xs'
+                  : 'clay-btn clay-btn-secondary text-slate-700'
               }`}
             >
               {c.id}
@@ -133,14 +133,14 @@ export const TrackComplaintPage: React.FC = () => {
       {complaint ? (
         <div className="space-y-6">
           {/* Visual Step Timeline */}
-          <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs p-6 space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-4">
+          <div className="clay-card rounded-3xl p-6 sm:p-8 space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/60 pb-4">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
                   Lifecycle Progress
                 </span>
                 <h2 className="text-base font-bold text-slate-900 tracking-tight">
-                  Incident Docket: {complaint.id}
+                  Incident Docket: <span className="text-indigo-600 font-mono">{complaint.id}</span>
                 </h2>
               </div>
               <div className="flex items-center gap-2">
@@ -159,20 +159,20 @@ export const TrackComplaintPage: React.FC = () => {
                     <div key={step.key} className="flex flex-col items-center text-center relative z-10">
                       {/* Step Circle Icon */}
                       <div
-                        className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs transition-all shadow-2xs mb-2.5 ${
+                        className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-xs transition-all mb-3 ${
                           state === 'completed'
-                            ? 'bg-emerald-600 text-white'
+                            ? 'clay-metric-icon bg-emerald-500 text-white shadow-md'
                             : state === 'current'
-                            ? 'bg-slate-900 text-white ring-4 ring-slate-100'
-                            : 'bg-slate-100 text-slate-400 border border-slate-200'
+                            ? 'clay-btn-primary text-white shadow-md ring-4 ring-indigo-200/60'
+                            : 'clay-inset bg-slate-100 text-slate-400'
                         }`}
                       >
                         {state === 'completed' ? (
-                          <CheckCircle2 className="w-4 h-4" />
+                          <CheckCircle2 className="w-5 h-5 text-white" />
                         ) : state === 'current' ? (
-                          <Clock className="w-4 h-4" />
+                          <Clock className="w-5 h-5 text-white animate-pulse" />
                         ) : (
-                          <span className="font-mono text-[11px]">{idx + 1}</span>
+                          <span className="font-mono text-xs">{idx + 1}</span>
                         )}
                       </div>
 
@@ -197,9 +197,9 @@ export const TrackComplaintPage: React.FC = () => {
             </div>
 
             {/* Latest Update Box */}
-            <div className="p-4 rounded-xl bg-slate-50/90 border border-slate-200/80 flex items-start gap-3.5 text-xs">
-              <div className="p-2 bg-slate-900 text-white rounded-lg shrink-0 mt-0.5 shadow-2xs">
-                <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+            <div className="p-4.5 rounded-2xl clay-inset flex items-start gap-3.5 text-xs">
+              <div className="p-2.5 clay-metric-icon bg-indigo-50 text-indigo-700 rounded-xl shrink-0 mt-0.5 shadow-xs">
+                <Sparkles className="w-4 h-4 text-indigo-600" />
               </div>
               <div className="flex-1 space-y-1">
                 <div className="flex items-center justify-between">
@@ -215,7 +215,7 @@ export const TrackComplaintPage: React.FC = () => {
                     })}
                   </span>
                 </div>
-                <p className="text-slate-600 leading-relaxed text-xs">
+                <p className="text-slate-600 leading-relaxed text-xs font-medium">
                   {complaint.adminNotes ||
                     (complaint.status === 'submitted'
                       ? 'Report logged into the civic intake database. AI classification model has generated priority recommendations awaiting operations supervisor review.'
@@ -230,7 +230,7 @@ export const TrackComplaintPage: React.FC = () => {
 
             {/* Resolution Details (if resolved) */}
             {complaint.resolutionDetails && (
-              <div className="p-4 rounded-xl bg-emerald-50/90 border border-emerald-200 text-xs text-emerald-950 space-y-1">
+              <div className="p-4 rounded-2xl clay-card bg-emerald-50/90 text-xs text-emerald-950 space-y-1">
                 <span className="font-bold text-emerald-900 flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   Verified Resolution Report
@@ -245,55 +245,55 @@ export const TrackComplaintPage: React.FC = () => {
           {/* Detailed Info Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Left: Complaint Metadata */}
-            <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs p-5 space-y-4">
+            <div className="clay-card rounded-3xl p-6 sm:p-7 space-y-5">
               <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
                 Incident Specification
               </h3>
 
-              <div className="space-y-3.5 text-xs">
+              <div className="space-y-4 text-xs">
                 <div>
-                  <span className="text-slate-400 block text-[11px] font-mono">Reported Details:</span>
-                  <p className="text-slate-800 font-medium mt-1 leading-relaxed bg-slate-50/70 p-3 rounded-lg border border-slate-100">
+                  <span className="text-slate-400 block text-[11px] font-mono mb-1 font-semibold">Reported Details:</span>
+                  <p className="text-slate-800 font-medium leading-relaxed clay-inset p-4 rounded-2xl">
                     "{complaint.description}"
                   </p>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
-                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                    <span className="text-slate-400 block text-[10px] font-mono uppercase font-bold">1. Reported:</span>
-                    <span className="font-bold text-slate-800 text-xs mt-0.5 block">{complaint.severity} Severity</span>
+                <div className="grid grid-cols-3 gap-2.5 pt-2 border-t border-slate-200/60">
+                  <div className="clay-inset p-3 rounded-2xl text-center">
+                    <span className="text-slate-400 block text-[10px] font-mono uppercase font-bold">1. Reported</span>
+                    <span className="font-extrabold text-slate-800 text-xs mt-1 block">{complaint.severity}</span>
                   </div>
-                  <div className="bg-indigo-50/60 p-2.5 rounded-lg border border-indigo-100/70">
-                    <span className="text-indigo-600 block text-[10px] font-mono uppercase font-bold">2. AI Priority:</span>
-                    <span className="font-bold text-indigo-950 text-xs mt-0.5 block">
+                  <div className="clay-inset bg-indigo-50/60 p-3 rounded-2xl text-center">
+                    <span className="text-indigo-600 block text-[10px] font-mono uppercase font-bold">2. AI Priority</span>
+                    <span className="font-extrabold text-indigo-950 text-xs mt-1 block">
                       {complaint.aiPriority}
                       {complaint.aiConfidence ? ` (${Math.round(complaint.aiConfidence * 100)}%)` : ''}
                     </span>
                   </div>
-                  <div className="bg-amber-50/60 p-2.5 rounded-lg border border-amber-100/70">
-                    <span className="text-amber-700 block text-[10px] font-mono uppercase font-bold">3. Admin Final:</span>
-                    <span className="font-bold text-slate-900 text-xs mt-0.5 block">
-                      {complaint.finalPriority || (complaint.reviewDecision === 'pending' ? 'Pending Review' : (complaint.priority || 'Unassigned'))}
+                  <div className="clay-inset bg-amber-50/60 p-3 rounded-2xl text-center">
+                    <span className="text-amber-700 block text-[10px] font-mono uppercase font-bold">3. Admin Final</span>
+                    <span className="font-extrabold text-slate-900 text-xs mt-1 block">
+                      {complaint.finalPriority || (complaint.reviewDecision === 'pending' ? 'Pending' : (complaint.priority || 'Unassigned'))}
                     </span>
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-100">
-                  <span className="text-slate-400 block text-[11px] font-mono">Assigned Agency:</span>
-                  <div className="flex items-center gap-1.5 font-bold text-slate-900 mt-1">
-                    <Building2 className="w-3.5 h-3.5 text-slate-700" />
+                <div className="pt-2 border-t border-slate-200/60">
+                  <span className="text-slate-400 block text-[11px] font-mono font-semibold">Assigned Agency:</span>
+                  <div className="flex items-center gap-2 font-bold text-slate-900 mt-1">
+                    <Building2 className="w-4 h-4 text-indigo-600" />
                     <span>{complaint.assignedDepartment || complaint.department || (complaint.reviewDecision === 'pending' ? 'Pending Human Assignment' : 'Unassigned')}</span>
                   </div>
                   {complaint.assignedOfficer && (
-                    <span className="text-[11px] text-slate-500 block mt-0.5 font-mono">
+                    <span className="text-[11px] text-slate-500 block mt-1 font-mono">
                       Officer: {complaint.assignedOfficer}
                     </span>
                   )}
                 </div>
 
-                <div className="pt-2 border-t border-slate-100">
-                  <span className="text-slate-400 block text-[11px] font-mono">Geographic Site:</span>
-                  <span className="font-medium text-slate-800 block mt-0.5">
+                <div className="pt-2 border-t border-slate-200/60">
+                  <span className="text-slate-400 block text-[11px] font-mono font-semibold">Geographic Site:</span>
+                  <span className="font-semibold text-slate-800 block mt-1">
                     {complaint.location.landmark || complaint.location.address}
                   </span>
                   <span className="text-[10px] font-mono text-slate-400 block mt-0.5">
@@ -304,13 +304,13 @@ export const TrackComplaintPage: React.FC = () => {
             </div>
 
             {/* Right: Map Pin & Event History */}
-            <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs p-5 space-y-4">
+            <div className="clay-card rounded-3xl p-6 sm:p-7 space-y-5">
               <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono flex items-center justify-between">
                 <span>Location Confirmation</span>
                 <span className="text-[10px] text-slate-500 font-mono">GIS Verified</span>
               </h3>
 
-              <div className="rounded-xl overflow-hidden border border-slate-200/80">
+              <div className="rounded-2xl overflow-hidden border border-slate-200/80 shadow-md">
                 <SmartCityMap
                   singleMarker={{
                     latitude: complaint.location.latitude,
@@ -324,20 +324,20 @@ export const TrackComplaintPage: React.FC = () => {
               </div>
 
               {/* Action Log History */}
-              <div className="pt-2 border-t border-slate-100">
+              <div className="pt-2 border-t border-slate-200/60">
                 <span className="text-[11px] font-bold text-slate-700 block mb-2 font-mono">
                   Official Event Log
                 </span>
                 <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
                   {complaint.timeline.map((ev, i) => (
-                    <div key={i} className="text-[11px] p-2.5 bg-slate-50/80 rounded-lg border border-slate-100">
-                      <div className="flex justify-between font-semibold text-slate-800">
+                    <div key={i} className="text-[11px] p-3 clay-inset rounded-2xl">
+                      <div className="flex justify-between font-bold text-slate-800">
                         <span>{ev.title}</span>
                         <span className="text-[10px] text-slate-400 font-normal font-mono">
                           {new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
-                      <p className="text-slate-500 mt-0.5 leading-relaxed">{ev.description}</p>
+                      <p className="text-slate-500 mt-1 leading-relaxed font-medium">{ev.description}</p>
                     </div>
                   ))}
                 </div>
@@ -349,27 +349,29 @@ export const TrackComplaintPage: React.FC = () => {
           <AIDecisionDisclaimer />
         </div>
       ) : isRestrictedByPrivacy ? (
-        <div className="bg-amber-50/90 border border-amber-200/90 rounded-2xl p-8 text-center space-y-3.5 shadow-2xs max-w-xl mx-auto">
-          <div className="w-12 h-12 bg-amber-100/90 text-amber-800 rounded-full flex items-center justify-center mx-auto border border-amber-300/80">
-            <ShieldAlert className="w-6 h-6" />
+        <div className="clay-card rounded-3xl p-8 text-center space-y-4 max-w-xl mx-auto">
+          <div className="w-14 h-14 clay-metric-icon bg-amber-100/90 text-amber-800 rounded-2xl flex items-center justify-center mx-auto shadow-md">
+            <ShieldAlert className="w-7 h-7" />
           </div>
-          <h2 className="text-base font-bold text-amber-950">
+          <h2 className="text-base font-bold text-slate-900">
             Access Restricted: Citizen Privacy Protection
           </h2>
-          <p className="text-xs text-amber-900 leading-relaxed">
+          <p className="text-xs text-slate-600 leading-relaxed font-medium">
             Incident docket <strong>"{searchedId}"</strong> is registered under a different citizen account. To safeguard citizen privacy and data security, citizens may only view complaints registered under their own profile.
           </p>
-          <div className="pt-2 text-[11px] text-amber-800 font-mono bg-white/70 py-1.5 px-3 rounded-lg border border-amber-200/60 inline-block">
+          <div className="pt-2 text-[11px] text-amber-900 font-mono clay-badge clay-badge-amber py-1.5 px-3.5 rounded-xl inline-block">
             Active Citizen Profile: <strong>{currentUser.name}</strong> ({currentUser.id})
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-slate-200/80 p-8 text-center space-y-3 shadow-2xs">
-          <AlertCircle className="w-8 h-8 text-amber-500 mx-auto" />
+        <div className="clay-card rounded-3xl p-8 text-center space-y-3.5 max-w-md mx-auto">
+          <div className="w-12 h-12 clay-metric-icon bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto">
+            <AlertCircle className="w-6 h-6" />
+          </div>
           <h2 className="text-base font-bold text-slate-900">
             No Incident Record Found for "{searchedId}"
           </h2>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+          <p className="text-xs text-slate-500 max-w-sm mx-auto font-medium">
             Please check the complaint ID for typos or select one of your registered complaints above.
           </p>
         </div>

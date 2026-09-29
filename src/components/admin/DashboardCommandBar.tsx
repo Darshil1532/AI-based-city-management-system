@@ -161,7 +161,7 @@ export const DashboardCommandBar: React.FC<DashboardCommandBarProps> = ({
   return (
     <div ref={containerRef} className="relative w-full space-y-2.5">
       {/* Search Input Bar */}
-      <div className="relative flex items-center bg-white border border-slate-200/90 rounded-xl shadow-2xs hover:border-slate-300 focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-200 transition-all">
+      <div className="relative flex items-center clay-inset rounded-2xl transition-all">
         <div className="pl-3.5 pr-2 text-slate-400">
           <Search className="w-4 h-4 text-slate-400" />
         </div>
@@ -196,7 +196,7 @@ export const DashboardCommandBar: React.FC<DashboardCommandBarProps> = ({
           <button
             type="button"
             onClick={() => openCommandBar(localQuery)}
-            className="hidden sm:inline-flex items-center gap-1 px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-[11px] font-mono border border-slate-200/80 transition-colors cursor-pointer"
+            className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 clay-btn clay-btn-secondary rounded-lg text-[11px] font-mono transition-all cursor-pointer"
             title="Open Full Command Palette (Cmd+K or /)"
           >
             <Command className="w-3 h-3" />
@@ -221,17 +221,17 @@ export const DashboardCommandBar: React.FC<DashboardCommandBarProps> = ({
                   onDepartmentSelect(isSelected ? 'all' : dept.name);
                 }
               }}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium shrink-0 transition-all cursor-pointer border ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all cursor-pointer ${
                 isSelected
-                  ? 'bg-blue-900 text-white border-blue-900 shadow-2xs'
-                  : 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200/80 hover:text-slate-900'
+                  ? 'clay-btn clay-btn-primary'
+                  : 'clay-btn clay-btn-secondary text-slate-600'
               }`}
             >
-              <Building2 className={`w-3 h-3 ${isSelected ? 'text-blue-300' : 'text-slate-400'}`} />
+              <Building2 className={`w-3 h-3 ${isSelected ? 'text-indigo-200' : 'text-slate-400'}`} />
               <span>{dept.name.replace(' Department', '').replace(' Division', '')}</span>
               <span
-                className={`text-[9px] px-1.5 py-0.1 rounded-full font-mono ${
-                  isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono ${
+                  isSelected ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-600'
                 }`}
               >
                 {dept.activeComplaints}
@@ -243,7 +243,7 @@ export const DashboardCommandBar: React.FC<DashboardCommandBarProps> = ({
 
       {/* Live Dropdown Search Results */}
       {isDropdownOpen && localQuery.trim() && (
-        <div className="absolute top-full left-0 right-0 mt-1.5 bg-white rounded-xl shadow-xl border border-slate-200 z-30 overflow-hidden max-h-96 overflow-y-auto divide-y divide-slate-100 animate-in fade-in-50 duration-100">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-200/90 z-30 overflow-hidden max-h-96 overflow-y-auto divide-y divide-slate-100 animate-in fade-in-50 duration-100">
           {flatItems.length === 0 ? (
             <div className="p-4 text-center text-xs text-slate-500">
               No complaints or departments found matching &quot;{localQuery}&quot;. Press{' '}

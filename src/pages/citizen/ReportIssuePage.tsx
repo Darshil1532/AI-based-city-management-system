@@ -176,13 +176,13 @@ export const ReportIssuePage: React.FC = () => {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200/80 shadow-2xs p-5 sm:p-6 space-y-5">
+      <form onSubmit={handleSubmit} className="clay-card rounded-3xl p-6 sm:p-8 space-y-6">
             {/* Category selection */}
             <div>
               <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 font-mono">
                 Issue Category <span className="text-rose-500">*</span>
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                 {[
                   'Pothole / Road',
                   'Garbage / Waste',
@@ -196,10 +196,10 @@ export const ReportIssuePage: React.FC = () => {
                     key={cat}
                     type="button"
                     onClick={() => setCategory(cat as ComplaintCategory)}
-                    className={`px-3 py-2 text-xs font-medium rounded-lg border text-left transition-all cursor-pointer ${
+                    className={`px-3.5 py-2.5 text-xs font-semibold rounded-xl text-left transition-all cursor-pointer ${
                       category === cat
-                        ? 'bg-slate-900 text-white border-slate-900 shadow-2xs font-semibold'
-                        : 'bg-slate-50/70 text-slate-700 border-slate-200/80 hover:bg-slate-100 hover:border-slate-300'
+                        ? 'clay-btn clay-btn-primary'
+                        : 'clay-btn clay-btn-secondary text-slate-700'
                     }`}
                   >
                     {cat}
@@ -213,27 +213,27 @@ export const ReportIssuePage: React.FC = () => {
               <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 font-mono">
                 Reported Severity <span className="text-rose-500">*</span>
               </label>
-              <div className="grid grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-3 gap-3">
                 {(['Low', 'Medium', 'High'] as SeverityLevel[]).map((sev) => (
                   <button
                     key={sev}
                     type="button"
                     onClick={() => setSeverity(sev)}
-                    className={`py-2 px-3 text-xs font-semibold rounded-lg border text-center transition-all cursor-pointer ${
+                    className={`py-2.5 px-3 text-xs font-bold rounded-xl text-center transition-all cursor-pointer ${
                       severity === sev
                         ? sev === 'High'
-                          ? 'bg-rose-600 text-white border-rose-600 shadow-2xs'
+                          ? 'clay-btn clay-btn-primary text-rose-100 ring-2 ring-rose-400/60'
                           : sev === 'Medium'
-                          ? 'bg-amber-600 text-white border-amber-600 shadow-2xs'
-                          : 'bg-slate-800 text-white border-slate-800 shadow-2xs'
-                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                          ? 'clay-btn clay-btn-primary text-amber-100 ring-2 ring-amber-400/60'
+                          : 'clay-btn clay-btn-primary text-slate-100 ring-2 ring-indigo-400/60'
+                        : 'clay-btn clay-btn-secondary text-slate-700'
                     }`}
                   >
                     {sev} Severity
                   </button>
                 ))}
               </div>
-              <p className="text-[11px] text-slate-400 mt-1.5">
+              <p className="text-[11px] text-slate-400 mt-1.5 font-medium">
                 Select High for imminent safety hazards, electrical shocks, open shafts, or road obstruction.
               </p>
             </div>
@@ -244,7 +244,7 @@ export const ReportIssuePage: React.FC = () => {
                 <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono">
                   Issue Description <span className="text-rose-500">*</span>
                 </label>
-                <span className="text-[11px] text-slate-400 font-mono">
+                <span className="text-[11px] text-slate-400 font-mono font-medium">
                   {description.length} chars
                 </span>
               </div>
@@ -259,19 +259,19 @@ export const ReportIssuePage: React.FC = () => {
                 rows={4}
                 required
                 placeholder="Describe the issue in detail, including physical hazards, water pooling, traffic blockages, or odor..."
-                className={`w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-slate-900 border rounded-xl focus:outline-none focus:ring-2 placeholder:text-slate-400 transition-all leading-relaxed ${
+                className={`w-full px-4 py-3 text-xs sm:text-sm clay-inset rounded-2xl text-slate-900 placeholder:text-slate-400 transition-all leading-relaxed font-medium ${
                   formErrors.description
-                    ? 'border-rose-400 focus:ring-rose-400/20 focus:border-rose-500'
-                    : 'border-slate-200/90 focus:ring-slate-400/10 focus:border-slate-400'
+                    ? 'ring-2 ring-rose-400/50'
+                    : 'focus:ring-2 focus:ring-indigo-300'
                 }`}
               />
               {formErrors.description && (
-                <p className="text-[11px] text-rose-600 mt-1 flex items-center gap-1 font-medium">
+                <p className="text-[11px] text-rose-600 mt-1.5 flex items-center gap-1 font-semibold">
                   <AlertCircle className="w-3.5 h-3.5" />
                   {formErrors.description}
                 </p>
               )}
-              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+              <div className="mt-2.5 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
                 <span className="font-semibold text-slate-400 font-mono">Sample quick fills:</span>
                 <button
                   type="button"
@@ -280,7 +280,7 @@ export const ReportIssuePage: React.FC = () => {
                     setCategory('Pothole / Road');
                     setSeverity('High');
                   }}
-                  className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                  className="clay-btn clay-btn-secondary px-2.5 py-1 rounded-xl text-slate-700 font-semibold cursor-pointer"
                 >
                   Market Pothole
                 </button>
@@ -291,7 +291,7 @@ export const ReportIssuePage: React.FC = () => {
                     setCategory('Garbage / Waste');
                     setSeverity('High');
                   }}
-                  className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                  className="clay-btn clay-btn-secondary px-2.5 py-1 rounded-xl text-slate-700 font-semibold cursor-pointer"
                 >
                   Garbage Dump
                 </button>
@@ -302,7 +302,7 @@ export const ReportIssuePage: React.FC = () => {
                     setCategory('Water Leakage');
                     setSeverity('Medium');
                   }}
-                  className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                  className="clay-btn clay-btn-secondary px-2.5 py-1 rounded-xl text-slate-700 font-semibold cursor-pointer"
                 >
                   Water Leak
                 </button>
@@ -310,7 +310,7 @@ export const ReportIssuePage: React.FC = () => {
             </div>
 
             {/* Location Picker (Map + Address) */}
-            <div className="pt-3 border-t border-slate-100">
+            <div className="pt-3 border-t border-slate-200/60">
               <LocationPicker
                 value={location}
                 onChange={(newLoc) => {
@@ -321,7 +321,7 @@ export const ReportIssuePage: React.FC = () => {
                 }}
               />
               {formErrors.location && (
-                <p className="text-[11px] text-rose-600 mt-2 flex items-center gap-1 font-medium">
+                <p className="text-[11px] text-rose-600 mt-2 flex items-center gap-1 font-semibold">
                   <AlertCircle className="w-3.5 h-3.5" />
                   {formErrors.location}
                 </p>
@@ -329,7 +329,7 @@ export const ReportIssuePage: React.FC = () => {
             </div>
 
             {/* Image upload (Optional) */}
-            <div className="pt-3 border-t border-slate-100">
+            <div className="pt-3 border-t border-slate-200/60">
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono">
                   Photo Attachment (Optional)
@@ -337,7 +337,7 @@ export const ReportIssuePage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowSampleImages(!showSampleImages)}
-                  className="text-[11px] text-blue-600 hover:underline font-medium cursor-pointer"
+                  className="text-[11px] text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer"
                 >
                   {showSampleImages ? 'Hide sample photos' : 'Choose sample photo'}
                 </button>
@@ -345,15 +345,15 @@ export const ReportIssuePage: React.FC = () => {
 
               {/* Sample Photo selector */}
               {showSampleImages && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3 p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-3 p-3 clay-inset rounded-2xl">
                   {SAMPLE_PHOTO_PREVIEWS.map((sample) => (
                     <div
                       key={sample.name}
                       onClick={() => setImage(sample.url)}
-                      className={`cursor-pointer rounded-lg overflow-hidden border transition-all ${
+                      className={`cursor-pointer rounded-xl overflow-hidden transition-all ${
                         image === sample.url
-                          ? 'border-slate-900 ring-2 ring-slate-900/10'
-                          : 'border-slate-200 hover:opacity-80'
+                          ? 'ring-3 ring-indigo-500 shadow-md'
+                          : 'opacity-70 hover:opacity-100'
                       }`}
                     >
                       <img
@@ -361,7 +361,7 @@ export const ReportIssuePage: React.FC = () => {
                         alt={sample.name}
                         className="w-full h-16 object-cover"
                       />
-                      <span className="text-[10px] block p-1 bg-white truncate font-medium text-slate-700">
+                      <span className="text-[10px] block p-1 bg-white truncate font-semibold text-slate-700 text-center">
                         {sample.name}
                       </span>
                     </div>
@@ -371,14 +371,14 @@ export const ReportIssuePage: React.FC = () => {
 
               {/* Current photo preview or upload dropzone */}
               {image ? (
-                <div className="relative rounded-xl overflow-hidden border border-slate-200/80 h-36 bg-slate-100 flex items-center justify-center group shadow-2xs">
+                <div className="relative rounded-2xl overflow-hidden border border-slate-200/80 h-40 bg-slate-100 flex items-center justify-center group shadow-md">
                   <img
                     src={image}
                     alt="Complaint preview"
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <label className="cursor-pointer px-3 py-1.5 bg-white text-slate-900 rounded-lg text-xs font-semibold hover:bg-slate-100 transition-colors">
+                    <label className="cursor-pointer px-3.5 py-2 clay-btn clay-btn-secondary text-slate-900 rounded-xl text-xs font-semibold">
                       Change Photo
                       <input
                         type="file"
@@ -390,16 +390,16 @@ export const ReportIssuePage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setImage('')}
-                      className="p-1.5 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors cursor-pointer"
+                      className="p-2 bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition-colors cursor-pointer shadow-md"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
               ) : (
-                <label className="border-2 border-dashed border-slate-200 hover:border-slate-400 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer bg-slate-50/40 hover:bg-slate-50/80 transition-colors">
-                  <Upload className="w-5 h-5 text-slate-400 mb-1.5" />
-                  <span className="text-xs font-semibold text-slate-700">
+                <label className="border-2 border-dashed border-slate-300 hover:border-indigo-400 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer clay-inset transition-colors">
+                  <Upload className="w-6 h-6 text-slate-400 mb-1.5" />
+                  <span className="text-xs font-bold text-slate-700">
                     Click to upload photo or drag and drop
                   </span>
                   <span className="text-[10px] text-slate-400 mt-0.5 font-mono">
@@ -414,7 +414,7 @@ export const ReportIssuePage: React.FC = () => {
                 </label>
               )}
               {formErrors.image && (
-                <p className="text-[11px] text-rose-600 mt-2 flex items-center gap-1 font-medium">
+                <p className="text-[11px] text-rose-600 mt-2 flex items-center gap-1 font-semibold">
                   <AlertCircle className="w-3.5 h-3.5" />
                   {formErrors.image}
                 </p>
@@ -422,7 +422,7 @@ export const ReportIssuePage: React.FC = () => {
             </div>
 
             {/* Citizen Contact Info */}
-            <div className="pt-3 border-t border-slate-100 space-y-2">
+            <div className="pt-3 border-t border-slate-200/60 space-y-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 font-mono">
@@ -432,7 +432,7 @@ export const ReportIssuePage: React.FC = () => {
                     type="text"
                     value={citizenName}
                     onChange={(e) => setCitizenName(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-slate-900 border border-slate-200/90 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 transition-all"
+                    className="w-full px-3.5 py-2.5 text-xs clay-inset rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-indigo-300 transition-all"
                   />
                 </div>
                 <div>
@@ -443,11 +443,11 @@ export const ReportIssuePage: React.FC = () => {
                     type="text"
                     value={citizenPhone}
                     onChange={(e) => setCitizenPhone(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-slate-900 border border-slate-200/90 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 transition-all"
+                    className="w-full px-3.5 py-2.5 text-xs clay-inset rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-indigo-300 transition-all"
                   />
                 </div>
               </div>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-[10px] text-slate-500">
                 🔒 <strong>Privacy Assurance:</strong> Citizen contact details are held confidential for municipal resolution tracking and SMS dispatches only. They are never published on public civic maps or exposed in API feeds.
               </p>
             </div>
@@ -455,7 +455,7 @@ export const ReportIssuePage: React.FC = () => {
             {/* Submit Button */}
             <div className="pt-3 space-y-2">
               {formErrors.general && (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-700 flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
                   <span>{formErrors.general}</span>
                 </div>
@@ -463,7 +463,7 @@ export const ReportIssuePage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting || !description.trim()}
-                className="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm transition-all shadow-2xs flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="w-full py-3.5 px-4 rounded-2xl clay-btn clay-btn-primary font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 {isSubmitting ? (
                   <>

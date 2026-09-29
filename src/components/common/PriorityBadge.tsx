@@ -24,25 +24,25 @@ export const PriorityBadge: React.FC<PriorityBadgeProps> = ({
   const configs: Record<'High' | 'Medium' | 'Low' | 'Pending', { label: string; classes: string; dotClass: string; icon: any }> = {
     High: {
       label: 'High',
-      classes: 'bg-rose-50 text-rose-800 border border-rose-200/80',
+      classes: 'clay-badge-rose text-rose-900',
       dotClass: 'bg-rose-500 animate-pulse',
       icon: AlertTriangle,
     },
     Medium: {
       label: 'Medium',
-      classes: 'bg-amber-50 text-amber-800 border border-amber-200/80',
+      classes: 'clay-badge-amber text-amber-900',
       dotClass: 'bg-amber-500',
       icon: Minus,
     },
     Low: {
       label: 'Low',
-      classes: 'bg-slate-100 text-slate-700 border border-slate-200',
+      classes: 'clay-badge text-slate-700',
       dotClass: 'bg-slate-400',
       icon: ArrowDownRight,
     },
     Pending: {
       label: priority || 'Pending Review',
-      classes: 'bg-amber-50/80 text-amber-800 border border-amber-300/70',
+      classes: 'clay-badge-amber text-amber-900',
       dotClass: 'bg-amber-400',
       icon: Minus,
     },
@@ -54,7 +54,7 @@ export const PriorityBadge: React.FC<PriorityBadgeProps> = ({
 
   return (
     <span
-      className={`inline-flex items-center rounded-md font-medium whitespace-nowrap shadow-xs ${sizeClasses[size]} ${config.classes}`}
+      className={`inline-flex items-center rounded-xl font-semibold whitespace-nowrap clay-badge ${sizeClasses[size]} ${config.classes}`}
     >
       <span className={`w-1.5 h-1.5 rounded-full ${config.dotClass}`} />
       <span>{config.label}</span>

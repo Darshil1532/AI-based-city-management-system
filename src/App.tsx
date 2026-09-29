@@ -44,7 +44,7 @@ const AppLayout: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans antialiased text-slate-900 selection:bg-blue-100 selection:text-blue-900">
+    <div className="min-h-screen bg-transparent flex flex-col font-sans antialiased text-slate-900 selection:bg-blue-100 selection:text-blue-900">
       {/* Global Sign In / Persona Switcher Modal */}
       <SignInModal />
 

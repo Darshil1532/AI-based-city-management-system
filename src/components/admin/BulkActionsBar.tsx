@@ -53,11 +53,11 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
       {/* Floating Bulk Actions Dock */}
       <aside
         aria-label="Bulk actions toolbar"
-        className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[95%] max-w-3xl bg-slate-900 text-white rounded-2xl shadow-2xl border border-slate-800 p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-4 duration-200 ${className}`}
+        className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[95%] max-w-3xl clay-card bg-slate-900/95 text-white rounded-3xl p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-4 duration-200 shadow-2xl ${className}`}
       >
         {/* Left: Counter & Select All Controls */}
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center gap-2 px-2.5 py-1 bg-slate-800 rounded-lg text-xs font-mono font-bold text-blue-400 border border-slate-700">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/90 rounded-xl text-xs font-mono font-bold text-blue-400 border border-slate-700/60 shadow-inner">
             <CheckSquare className="w-3.5 h-3.5 text-blue-400" />
             <span>
               {selectedIds.length} <span className="hidden sm:inline font-sans font-normal text-slate-300">selected</span>
@@ -67,7 +67,7 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
           <button
             type="button"
             onClick={isAllVisibleSelected ? onClearSelection : onSelectAllVisible}
-            className="text-xs text-slate-300 hover:text-white underline underline-offset-2 decoration-slate-600 hover:decoration-slate-300 transition-colors cursor-pointer"
+            className="text-xs text-slate-300 hover:text-white underline underline-offset-4 decoration-slate-600 hover:decoration-slate-300 transition-all cursor-pointer font-medium"
           >
             {isAllVisibleSelected
               ? 'Deselect all'
@@ -76,12 +76,12 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
         </div>
 
         {/* Center/Right: Action Buttons */}
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Bulk Assign to Department */}
           <button
             type="button"
             onClick={() => setActiveModal('assign')}
-            className="px-2.5 sm:px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            className="px-3.5 py-2 text-xs font-bold clay-btn-blue text-white rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
             title="Bulk Assign to Department"
           >
             <Building2 className="w-3.5 h-3.5" />
@@ -92,7 +92,7 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
           <button
             type="button"
             onClick={() => setActiveModal('status')}
-            className="px-2.5 sm:px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2 text-xs font-bold clay-btn bg-slate-800 text-white border border-slate-700/80 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
             title="Bulk Status Update"
           >
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
@@ -103,7 +103,7 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
           <button
             type="button"
             onClick={() => setActiveModal('priority')}
-            className="px-2 sm:px-2.5 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="px-3 py-2 text-xs font-bold clay-btn bg-slate-800 text-slate-200 border border-slate-700/80 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
             title="Bulk Priority"
           >
             <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
@@ -114,7 +114,7 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
           <button
             type="button"
             onClick={() => setActiveModal('ratify')}
-            className="px-2 sm:px-2.5 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-blue-300 border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="px-3 py-2 text-xs font-bold clay-btn bg-slate-800 text-blue-300 border border-slate-700/80 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
             title="Ratify AI Triage"
           >
             <Sparkles className="w-3.5 h-3.5 text-blue-400" />
@@ -126,7 +126,7 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
             type="button"
             onClick={onClearSelection}
             aria-label="Clear selection"
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer ml-1"
+            className="w-8 h-8 clay-btn bg-slate-800 text-slate-400 hover:text-white rounded-xl flex items-center justify-center transition-all cursor-pointer ml-1"
             title="Clear Selection (Esc)"
           >
             <X className="w-4 h-4" />
