@@ -8,6 +8,7 @@ export interface INotificationService {
   markAsRead(id: string): void;
   markAllAsRead(userId: string): void;
   clear(userId: string): void;
+  saveAll(notifications: NotificationItem[]): void;
   reset(): NotificationItem[];
 }
 
@@ -74,6 +75,11 @@ export class NotificationService implements INotificationService {
     const filtered = this.notifications.filter((n) => n.userId !== userId);
     this.repository.saveAll(filtered);
     this.notifications = filtered;
+  }
+
+  saveAll(notifications: NotificationItem[]): void {
+    this.repository.saveAll(notifications);
+    this.notifications = [...notifications];
   }
 
   reset(): NotificationItem[] {

@@ -6,8 +6,33 @@ import firebaseConfig from '../../firebase-applet-config.json';
 let adminApp: App | null = null;
 
 /**
+ * Validates that production requirements are met before starting the server.
+ * Fails fast with a clear error if credentials or project ID are missing in production.
+ */
+export function assertProductionReadyConfig(): void {
+  if (process.env.NODE_ENV === 'production') {
+    const hasServiceAccount = !!process.env.FIREBASE_SERVICE_ACCOUNT;
+    const hasGoogleAppCredentials = !!process.env.GOOGLE_APPLICATION_CREDENTIALS;
+
+    if (!hasServiceAccount && !hasGoogleAppCredentials) {
+      throw new Error(
+        '[FirebaseAdmin] CRITICAL STARTUP FAILURE: Production mode requires valid Firebase Admin credentials via FIREBASE_SERVICE_ACCOUNT or GOOGLE_APPLICATION_CREDENTIALS. Failing fast to prevent unverified execution.'
+      );
+    }
+
+    const projectId = process.env.FIREBASE_PROJECT_ID || firebaseConfig.projectId;
+    if (!projectId) {
+      throw new Error(
+        '[FirebaseAdmin] CRITICAL STARTUP FAILURE: Missing Firebase projectId in production environment.'
+      );
+    }
+  }
+}
+
+/**
  * Initializes Firebase Admin SDK if not already initialized.
- * Can use default credentials, service account environment variable, or projectId fallback.
+ * In production: throws if credentials are missing or initialization fails.
+ * In test/dev: allows fallback for local developer ergonomics.
  */
 export function getFirebaseAdminApp(): App | null {
   if (adminApp) return adminApp;
@@ -21,6 +46,9 @@ export function getFirebaseAdminApp(): App | null {
 
     const projectId = process.env.FIREBASE_PROJECT_ID || firebaseConfig.projectId;
     if (!projectId) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('[FirebaseAdmin] Missing Firebase project ID in production.');
+      }
       return null;
     }
 
@@ -32,18 +60,31 @@ export function getFirebaseAdminApp(): App | null {
           projectId,
         });
         return adminApp;
-      } catch (e) {
-        console.warn('[FirebaseAdmin] Failed to parse FIREBASE_SERVICE_ACCOUNT JSON:', e);
+      } catch (e: any) {
+        const msg = `[FirebaseAdmin] Failed to parse FIREBASE_SERVICE_ACCOUNT JSON: ${e?.message || e}`;
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error(msg);
+        }
+        console.warn(msg);
       }
     }
 
     // Default initialization (works with GOOGLE_APPLICATION_CREDENTIALS or gcloud environment)
-    adminApp = initializeApp({
-      projectId,
-    });
-    return adminApp;
+    if (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.NODE_ENV !== 'production') {
+      adminApp = initializeApp({
+        projectId,
+      });
+      return adminApp;
+    }
+
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('[FirebaseAdmin] No valid credentials provided in production.');
+    }
+    return null;
   } catch (err: any) {
-    // If running in test or local mode without GCP credentials, initializeApp might throw on credential check
+    if (process.env.NODE_ENV === 'production') {
+      throw err;
+    }
     console.info('[FirebaseAdmin] Admin SDK initialization notice:', err?.message || err);
     return null;
   }
@@ -68,12 +109,28 @@ export async function verifyFirebaseIdToken(token: string): Promise<DecodedIdTok
  * Returns admin Firestore instance if available, or null.
  */
 export function getAdminFirestore(): Firestore | null {
+  if (process.env.NODE_ENV === 'production') {
+    const hasCredentials = !!process.env.FIREBASE_SERVICE_ACCOUNT || !!process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    if (!hasCredentials) {
+      throw new Error('[FirebaseAdmin] Firestore Admin is required in production but credentials are not configured.');
+    }
+  }
+
   const app = getFirebaseAdminApp();
-  if (!app) return null;
+  if (!app) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('[FirebaseAdmin] Firestore Admin is required in production but unavailable.');
+    }
+    return null;
+  }
   try {
     return getFirestore(app);
-  } catch {
+  } catch (err: any) {
+    if (process.env.NODE_ENV === 'production') {
+      throw err;
+    }
     return null;
   }
 }
+
 

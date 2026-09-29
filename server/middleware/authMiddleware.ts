@@ -61,9 +61,11 @@ const ADMIN_EMAILS = new Set([
  * Strictly disabled in production unless ALLOW_DEMO_AUTH is explicitly set to 'true'.
  */
 export function isDemoAuthAllowed(): boolean {
-  if (process.env.ALLOW_DEMO_AUTH === 'true') return true;
+  if (process.env.NODE_ENV === 'production') {
+    return process.env.ALLOW_DEMO_AUTH === 'true';
+  }
   if (process.env.ALLOW_DEMO_AUTH === 'false') return false;
-  return process.env.NODE_ENV !== 'production';
+  return true;
 }
 
 /**
@@ -118,11 +120,16 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
       }
     }
 
-    // 3. Isolated Demo Fallback Headers (ONLY if demo auth is permitted)
+    // 3. Isolated Demo Fallback Headers (Strictly forbidden in production)
     const demoApiKey = req.headers['x-demo-access-key'];
     const headerUserId = req.headers['x-user-id'] as string | undefined;
 
-    if (demoApiKey === 'smartcity-demo-key-v1' && headerUserId && isDemoAuthAllowed()) {
+    if (
+      process.env.NODE_ENV !== 'production' &&
+      demoApiKey === 'smartcity-demo-key-v1' &&
+      headerUserId &&
+      isDemoAuthAllowed()
+    ) {
       if (headerUserId.startsWith('ADM-')) {
         req.user = {
           id: headerUserId,

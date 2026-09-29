@@ -1,7 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { app } from '../server/app';
-import { complaintService } from '../server/services/complaintService';
+import { complaintService, DatabasePersistenceError } from '../server/services/complaintService';
+import { assertProductionReadyConfig } from '../server/lib/firebaseAdmin';
 import {
   AnalyzeRequestSchema,
   GeminiOutputSchema,
@@ -139,6 +140,44 @@ describe('Smart City Architecture & Security Verification Suite', () => {
         delete process.env.ALLOW_DEMO_AUTH;
       }
     });
+
+    it('AUTH-7: Expired JWT token is cryptographically rejected (401 INVALID_TOKEN)', async () => {
+      const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
+      const payload = Buffer.from(
+        JSON.stringify({
+          iss: 'https://securetoken.google.com/gen-lang-client-0857632644',
+          aud: 'gen-lang-client-0857632644',
+          sub: 'expired-user-id',
+          exp: Math.floor(Date.now() / 1000) - 3600,
+        })
+      ).toString('base64url');
+      const expiredJwt = `${header}.${payload}.expired_fake_signature`;
+
+      const res = await makeRequest('GET', '/api/admin/complaints', {
+        authorization: `Bearer ${expiredJwt}`,
+      });
+      assert.equal(res.status, 401);
+      assert.equal(res.body.code, 'INVALID_TOKEN');
+    });
+
+    it('AUTH-8: Malformed JWT signature is cryptographically rejected (401 INVALID_TOKEN)', async () => {
+      const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
+      const payload = Buffer.from(
+        JSON.stringify({
+          iss: 'https://securetoken.google.com/gen-lang-client-0857632644',
+          aud: 'gen-lang-client-0857632644',
+          sub: 'tampered-user-id',
+          exp: Math.floor(Date.now() / 1000) + 3600,
+        })
+      ).toString('base64url');
+      const badSigJwt = `${header}.${payload}.corrupted_garbage_signature`;
+
+      const res = await makeRequest('GET', '/api/admin/complaints', {
+        authorization: `Bearer ${badSigJwt}`,
+      });
+      assert.equal(res.status, 401);
+      assert.equal(res.body.code, 'INVALID_TOKEN');
+    });
   });
 
   // ==========================================
@@ -215,8 +254,8 @@ describe('Smart City Architecture & Security Verification Suite', () => {
       authProvider: 'demo' as const,
     };
 
-    it('LIFECYCLE-1: Direct submitted -> resolved is rejected without overrideRationale', () => {
-      const complaint = complaintService.createComplaint(
+    it('LIFECYCLE-1: Direct submitted -> resolved is rejected without overrideRationale', async () => {
+      const complaint = await complaintService.createComplaint(
         {
           title: 'Test Pothole on Sector 5 Road',
           description: 'Deep road cavity causing hazards for motorists.',
@@ -230,7 +269,7 @@ describe('Smart City Architecture & Security Verification Suite', () => {
       assert.equal(complaint.status, 'submitted');
 
       // Attempt invalid transition
-      const result = complaintService.updateStatus(
+      const result = await complaintService.updateStatus(
         complaint.id,
         {
           status: 'resolved',
@@ -243,8 +282,8 @@ describe('Smart City Architecture & Security Verification Suite', () => {
       assert.equal(result.code, 'INVALID_STATE_TRANSITION');
     });
 
-    it('LIFECYCLE-2: Valid stepwise progression submitted -> assigned -> in_progress -> resolved succeeds', () => {
-      const complaint = complaintService.createComplaint(
+    it('LIFECYCLE-2: Valid stepwise progression submitted -> assigned -> in_progress -> resolved succeeds', async () => {
+      const complaint = await complaintService.createComplaint(
         {
           title: 'Test Water Leakage on 6th Avenue',
           description: 'Continuous water flow overflowing into driveway.',
@@ -256,7 +295,7 @@ describe('Smart City Architecture & Security Verification Suite', () => {
       );
 
       // 1. submitted -> assigned
-      const assigned = complaintService.assignDepartment(
+      const assigned = await complaintService.assignDepartment(
         complaint.id,
         {
           department: 'Water Supply Department',
@@ -268,7 +307,7 @@ describe('Smart City Architecture & Security Verification Suite', () => {
       assert.equal(assigned.complaint!.status, 'assigned');
 
       // 2. assigned -> in_progress
-      const inProgress = complaintService.updateStatus(
+      const inProgress = await complaintService.updateStatus(
         complaint.id,
         { status: 'in_progress', notes: 'Crews on site' },
         adminUser
@@ -277,7 +316,7 @@ describe('Smart City Architecture & Security Verification Suite', () => {
       assert.equal(inProgress.complaint!.status, 'in_progress');
 
       // 3. in_progress -> resolved (with resolutionDetails)
-      const resolved = complaintService.resolveComplaint(
+      const resolved = await complaintService.resolveComplaint(
         complaint.id,
         {
           resolutionDetails: 'Main joint clamped, sealed, and pressure tested successfully.',
@@ -291,8 +330,8 @@ describe('Smart City Architecture & Security Verification Suite', () => {
       assert.equal(resolved.complaint!.resolvedBy, 'Demo Municipal Officer');
     });
 
-    it('LIFECYCLE-3: Direct submitted -> resolved with explicit override rationale is permitted', () => {
-      const complaint = complaintService.createComplaint(
+    it('LIFECYCLE-3: Direct submitted -> resolved with explicit override rationale is permitted', async () => {
+      const complaint = await complaintService.createComplaint(
         {
           title: 'Duplicate garbage dump already addressed',
           description: 'Trash pile reported twice by multiple residents.',
@@ -303,7 +342,7 @@ describe('Smart City Architecture & Security Verification Suite', () => {
         adminUser
       );
 
-      const resolved = complaintService.resolveComplaint(
+      const resolved = await complaintService.resolveComplaint(
         complaint.id,
         {
           resolutionDetails: 'Area inspected; verified that morning sanitation squad already cleared this location.',
@@ -328,8 +367,8 @@ describe('Smart City Architecture & Security Verification Suite', () => {
       assert.equal(res.body.code, 'INVALID_REQUEST');
     });
 
-    it('LIFECYCLE-5: State machine strictly forbids invalid transitions like resolved -> submitted or in_progress -> submitted', () => {
-      const complaint = complaintService.createComplaint(
+    it('LIFECYCLE-5: State machine strictly forbids invalid transitions like resolved -> submitted or in_progress -> submitted', async () => {
+      const complaint = await complaintService.createComplaint(
         {
           title: 'Lifecycle State Machine Enforcement Test',
           description: 'Testing invalid backwards lifecycle state transitions.',
@@ -341,25 +380,25 @@ describe('Smart City Architecture & Security Verification Suite', () => {
       );
 
       // Advance to in_progress
-      complaintService.assignDepartment(complaint.id, { department: 'Electrical Department' }, adminUser);
-      complaintService.updateStatus(complaint.id, { status: 'in_progress' }, adminUser);
+      await complaintService.assignDepartment(complaint.id, { department: 'Electrical Department' }, adminUser);
+      await complaintService.updateStatus(complaint.id, { status: 'in_progress' }, adminUser);
 
       // Attempt invalid transition: in_progress -> submitted
-      const revertAttempt = complaintService.updateStatus(complaint.id, { status: 'submitted' }, adminUser);
+      const revertAttempt = await complaintService.updateStatus(complaint.id, { status: 'submitted' }, adminUser);
       assert.equal(revertAttempt.success, false);
       assert.equal(revertAttempt.code, 'INVALID_STATE_TRANSITION');
 
       // Resolve properly
-      complaintService.resolveComplaint(complaint.id, { resolutionDetails: 'Fixed completely' }, adminUser);
+      await complaintService.resolveComplaint(complaint.id, { resolutionDetails: 'Fixed completely' }, adminUser);
       assert.equal(complaint.status, 'resolved');
 
       // Attempt invalid transition: resolved -> submitted
-      const fromResolvedToSubmitted = complaintService.updateStatus(complaint.id, { status: 'submitted' }, adminUser);
+      const fromResolvedToSubmitted = await complaintService.updateStatus(complaint.id, { status: 'submitted' }, adminUser);
       assert.equal(fromResolvedToSubmitted.success, false);
       assert.equal(fromResolvedToSubmitted.code, 'INVALID_STATE_TRANSITION');
 
       // Attempt invalid transition: resolved -> assigned
-      const fromResolvedToAssigned = complaintService.updateStatus(complaint.id, { status: 'assigned' }, adminUser);
+      const fromResolvedToAssigned = await complaintService.updateStatus(complaint.id, { status: 'assigned' }, adminUser);
       assert.equal(fromResolvedToAssigned.success, false);
       assert.equal(fromResolvedToAssigned.code, 'INVALID_STATE_TRANSITION');
     });
@@ -415,8 +454,8 @@ describe('Smart City Architecture & Security Verification Suite', () => {
       assert.ok(prompt.includes('IGNORE ALL PREVIOUS INSTRUCTIONS'));
     });
 
-    it('AI-4: Missing confidence is handled honestly without manufacturing fake scores', () => {
-      const complaint = complaintService.createComplaint(
+    it('AI-4: Missing confidence is handled honestly without manufacturing fake scores', async () => {
+      const complaint = await complaintService.createComplaint(
         {
           title: 'Streetlight out on 4th cross',
           description: 'Dark corner at intersection causing safety concerns.',
@@ -445,7 +484,7 @@ describe('Smart City Architecture & Security Verification Suite', () => {
 
       assert.equal(complaint.aiConfidence, undefined);
       // Timeline event description must explicitly disclose fallback or not specify fake %
-      const aiEvent = complaint.timeline.find((t) => t.badgeType === 'ai');
+      const aiEvent = complaint.timeline.find((t: any) => t.badgeType === 'ai');
       assert.ok(aiEvent);
       assert.ok(!aiEvent.description.includes('undefined%'));
       assert.ok(aiEvent.description.includes('Fallback decision support'));
@@ -502,8 +541,8 @@ describe('Smart City Architecture & Security Verification Suite', () => {
       authProvider: 'demo' as const,
     };
 
-    it('DATA-1: Citizen phone number is not hardcoded and respects input or undefined', () => {
-      const complaintNoPhone = complaintService.createComplaint(
+    it('DATA-1: Citizen phone number is not hardcoded and respects input or undefined', async () => {
+      const complaintNoPhone = await complaintService.createComplaint(
         {
           title: 'No phone report',
           description: 'Reporting without personal phone number.',
@@ -515,7 +554,7 @@ describe('Smart City Architecture & Security Verification Suite', () => {
       );
       assert.equal(complaintNoPhone.citizenPhone, undefined, 'Default phone must not be hardcoded');
 
-      const complaintWithPhone = complaintService.createComplaint(
+      const complaintWithPhone = await complaintService.createComplaint(
         {
           title: 'Custom phone report',
           description: 'Reporting with real phone number.',
@@ -569,6 +608,286 @@ describe('Smart City Architecture & Security Verification Suite', () => {
 
       assert.equal(passed, 40, 'Should allow exactly 40 requests in window');
       assert.equal(blocked, true, 'Requests exceeding limit must be rate limited with 429');
+    });
+  });
+
+  // ==========================================
+  // PRODUCTION FAIL-FAST & PERSISTENCE FAILURE
+  // ==========================================
+  describe('Production Fail-Fast & Persistence Failure Handlers', () => {
+    it('FAILFAST-1: assertProductionReadyConfig throws in production when credentials are missing', () => {
+      const prevEnv = process.env.NODE_ENV;
+      const prevSA = process.env.FIREBASE_SERVICE_ACCOUNT;
+      const prevGAC = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+
+      try {
+        process.env.NODE_ENV = 'production';
+        delete process.env.FIREBASE_SERVICE_ACCOUNT;
+        delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
+
+        assert.throws(
+          () => assertProductionReadyConfig(),
+          /CRITICAL STARTUP FAILURE: Production mode requires valid Firebase Admin credentials/
+        );
+      } finally {
+        process.env.NODE_ENV = prevEnv;
+        if (prevSA) process.env.FIREBASE_SERVICE_ACCOUNT = prevSA;
+        if (prevGAC) process.env.GOOGLE_APPLICATION_CREDENTIALS = prevGAC;
+      }
+    });
+
+    it('PERSISTENCE-1: In production mode, Firestore write failure raises DatabasePersistenceError resulting in 503 PERSISTENCE_FAILURE', async () => {
+      const prevEnv = process.env.NODE_ENV;
+      const prevDemo = process.env.ALLOW_DEMO_AUTH;
+      try {
+        process.env.NODE_ENV = 'production';
+        process.env.ALLOW_DEMO_AUTH = 'true';
+        // In production, when Admin Firestore is unavailable or fails,
+        // createComplaint throws DatabasePersistenceError which the route handler maps to 503 PERSISTENCE_FAILURE
+        const res = await makeRequest(
+          'POST',
+          '/api/complaints',
+          { authorization: 'Bearer demo-citizen-token' },
+          {
+            title: 'Water pipe rupture on central avenue',
+            description: 'Severe water leak flooding the main sidewalk and street.',
+            category: 'Water Leakage',
+            severity: 'High',
+            location: { latitude: 23.23, longitude: 77.43, address: 'Central Avenue' },
+          }
+        );
+
+        // When production persistence fails, server MUST return 503 PERSISTENCE_FAILURE and NEVER 200 with false memory success
+        assert.equal(res.status, 503);
+        assert.equal(res.body.code, 'PERSISTENCE_FAILURE');
+      } finally {
+        process.env.NODE_ENV = prevEnv;
+        if (prevDemo !== undefined) {
+          process.env.ALLOW_DEMO_AUTH = prevDemo;
+        } else {
+          delete process.env.ALLOW_DEMO_AUTH;
+        }
+      }
+    });
+  });
+
+  // ==========================================
+  // NOTIFICATION AUTHORIZATION & OWNERSHIP
+  // ==========================================
+  describe('Notification Authorization & Ownership', () => {
+    it('NOTIF-1: Citizen can dispatch a notification targeted at themselves (201)', async () => {
+      const res = await makeRequest(
+        'POST',
+        '/api/notifications',
+        { authorization: 'Bearer demo-citizen-token' },
+        {
+          userId: 'CIT-DEMO-01',
+          title: 'Complaint Registered',
+          message: 'Your report was received by municipal registry.',
+          type: 'submission',
+          link: '/track?id=SC1024',
+        }
+      );
+      assert.equal(res.status, 201);
+      assert.equal(res.body.notification.userId, 'CIT-DEMO-01');
+    });
+
+    it('NOTIF-2: Citizen cannot dispatch notification targeted at another citizen (403 FORBIDDEN)', async () => {
+      const res = await makeRequest(
+        'POST',
+        '/api/notifications',
+        { authorization: 'Bearer demo-citizen-token' },
+        {
+          userId: 'ANOTHER-CITIZEN-999',
+          title: 'Impersonated alert',
+          message: 'Forged notification attempt.',
+          type: 'submission',
+        }
+      );
+      assert.equal(res.status, 403);
+      assert.equal(res.body.code, 'FORBIDDEN');
+    });
+
+    it('NOTIF-3: Admin can dispatch notification targeting any citizen (201)', async () => {
+      const res = await makeRequest(
+        'POST',
+        '/api/notifications',
+        { authorization: 'Bearer demo-admin-token' },
+        {
+          userId: 'CIT-DEMO-01',
+          title: 'Work Order Assigned',
+          message: 'A field crew has been scheduled for your complaint.',
+          type: 'assigned',
+          link: '/track?id=SC1024',
+        }
+      );
+      assert.equal(res.status, 201);
+      assert.equal(res.body.notification.userId, 'CIT-DEMO-01');
+    });
+  });
+
+  // ==========================================
+  // ADMIN INSIGHTS ACCESS CONTROL
+  // ==========================================
+  describe('Admin Insights Access Control', () => {
+    it('INSIGHTS-1: Citizen role accessing /api/admin/insights returns 403 FORBIDDEN', async () => {
+      const res = await makeRequest('GET', '/api/admin/insights', {
+        authorization: 'Bearer demo-citizen-token',
+      });
+      assert.equal(res.status, 403);
+      assert.equal(res.body.code, 'FORBIDDEN');
+    });
+
+    it('INSIGHTS-2: Admin role accessing /api/admin/insights returns 200 OK', async () => {
+      const res = await makeRequest('GET', '/api/admin/insights', {
+        authorization: 'Bearer demo-admin-token',
+      });
+      assert.equal(res.status, 200);
+      assert.ok(Array.isArray(res.body.insights));
+    });
+  });
+
+  // ==========================================
+  // COMPLETE API INTEGRATION FLOWS
+  // ==========================================
+  describe('Complete API Integration Flows', () => {
+    let createdComplaintId: string = '';
+
+    it('FLOW-1 (Citizen Flow): POST complaint -> GET citizen complaints -> track complaint', async () => {
+      // 1. Citizen posts complaint to Express API
+      const postRes = await makeRequest(
+        'POST',
+        '/api/complaints',
+        { authorization: 'Bearer demo-citizen-token' },
+        {
+          title: 'Integration Test Pothole at Sector 9',
+          description: 'Huge crater near market entrance causing vehicular damage.',
+          category: 'Pothole / Road',
+          severity: 'High',
+          location: {
+            latitude: 23.235,
+            longitude: 77.435,
+            address: 'Sector 9 Market Entrance',
+            district: 'North District',
+          },
+          aiAnalysis: {
+            category: 'Pothole / Road',
+            priority: 'High',
+            department: 'Public Works Department',
+            confidence: 0.95,
+            reasoning: 'Critical arterial road defect posing immediate hazard.',
+            factors: ['Heavy traffic', 'Depth > 10cm'],
+            provider: 'Gemini',
+            providerLabel: 'Gemini 2.5 Flash',
+          },
+        }
+      );
+
+      assert.equal(postRes.status, 201);
+      assert.ok(postRes.body.complaint);
+      createdComplaintId = postRes.body.complaint.id;
+      assert.equal(postRes.body.complaint.citizenId, 'CIT-DEMO-01');
+      assert.equal(postRes.body.complaint.status, 'submitted');
+
+      // 2. Citizen lists own complaints
+      const listRes = await makeRequest('GET', '/api/citizen/complaints', {
+        authorization: 'Bearer demo-citizen-token',
+      });
+      assert.equal(listRes.status, 200);
+      const found = listRes.body.complaints.some((c: any) => c.id === createdComplaintId);
+      assert.equal(found, true, 'Created complaint must be visible in citizen own complaints');
+
+      // 3. Citizen tracks complaint
+      const trackRes = await makeRequest('GET', `/api/complaints/${createdComplaintId}/track`, {
+        authorization: 'Bearer demo-citizen-token',
+      });
+      assert.equal(trackRes.status, 200);
+      assert.equal(trackRes.body.complaint.id, createdComplaintId);
+      assert.equal(trackRes.body.complaint.category, 'Pothole / Road');
+    });
+
+    it('FLOW-2 (Admin Flow): Review AI -> Assign -> In Progress -> Resolve with signature', async () => {
+      assert.ok(createdComplaintId, 'Requires created complaint from FLOW-1');
+
+      // 1. Admin reviews and ratifies AI recommendation
+      const reviewRes = await makeRequest(
+        'POST',
+        `/api/admin/complaints/${createdComplaintId}/review`,
+        { authorization: 'Bearer demo-admin-token' },
+        {
+          decision: 'ratified',
+          notes: 'Ratified by municipal engineer for emergency works.',
+        }
+      );
+      assert.equal(reviewRes.status, 200);
+      assert.equal(reviewRes.body.complaint.reviewDecision, 'ratified');
+
+      // 2. Admin assigns department & officer
+      const assignRes = await makeRequest(
+        'PATCH',
+        `/api/admin/complaints/${createdComplaintId}/assign`,
+        { authorization: 'Bearer demo-admin-token' },
+        {
+          department: 'Public Works Department',
+          officer: 'Officer Sharma',
+          notes: 'Work order dispatched to Road Maintenance Division 2.',
+        }
+      );
+      assert.equal(assignRes.status, 200);
+      assert.equal(assignRes.body.complaint.assignedDepartment, 'Public Works Department');
+      assert.equal(assignRes.body.complaint.status, 'assigned');
+
+      // 3. Move to in_progress
+      const progressRes = await makeRequest(
+        'PATCH',
+        `/api/admin/complaints/${createdComplaintId}/status`,
+        { authorization: 'Bearer demo-admin-token' },
+        {
+          status: 'in_progress',
+          notes: 'Hot mix asphalt crew active on site.',
+        }
+      );
+      assert.equal(progressRes.status, 200);
+      assert.equal(progressRes.body.complaint.status, 'in_progress');
+
+      // 4. Resolve with signature
+      const resolveRes = await makeRequest(
+        'POST',
+        `/api/admin/complaints/${createdComplaintId}/resolve`,
+        { authorization: 'Bearer demo-admin-token' },
+        {
+          resolutionDetails: 'Cavity excavated, repaved with hot mix bituminous concrete, and compaction tested.',
+          officerSignature: 'Officer Sharma',
+        }
+      );
+      assert.equal(resolveRes.status, 200);
+      assert.equal(resolveRes.body.complaint.status, 'resolved');
+      assert.ok(resolveRes.body.complaint.resolvedAt);
+      assert.equal(resolveRes.body.complaint.resolvedBy, 'Officer Sharma');
+    });
+
+    it('FLOW-3 (Hotspots Flow): GET /api/hotspots and POST /api/admin/hotspots/recalculate', async () => {
+      // Public / citizen view
+      const getRes = await makeRequest('GET', '/api/hotspots');
+      assert.equal(getRes.status, 200);
+      assert.ok(Array.isArray(getRes.body.hotspots));
+
+      // Admin recalculation
+      const recalcRes = await makeRequest(
+        'POST',
+        '/api/admin/hotspots/recalculate',
+        { authorization: 'Bearer demo-admin-token' }
+      );
+      assert.equal(recalcRes.status, 200);
+      assert.ok(Array.isArray(recalcRes.body.hotspots));
+
+      // Citizen recalculation forbidden
+      const forbidRes = await makeRequest(
+        'POST',
+        '/api/admin/hotspots/recalculate',
+        { authorization: 'Bearer demo-citizen-token' }
+      );
+      assert.equal(forbidRes.status, 403);
     });
   });
 });

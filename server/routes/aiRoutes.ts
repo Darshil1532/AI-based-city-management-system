@@ -161,7 +161,7 @@ aiRouter.post('/ai/analyze', aiRateLimiter, async (req: Request, res: Response) 
     return res.status(503).json({
       error: 'AI service temporarily unavailable',
       message: 'Automated municipal decision-support is temporarily unavailable. Please proceed with manual triage.',
-      code: 'GEMINI_UNAVAILABLE',
+      code: 'AI_SERVICE_UNAVAILABLE',
     });
   }
 });
@@ -235,7 +235,7 @@ aiRouter.post('/ai/insights', aiRateLimiter, async (req: Request, res: Response)
     return res.status(503).json({
       error: 'AI insights temporarily unavailable',
       message: 'Automated municipal pattern detection is temporarily unavailable.',
-      code: 'GEMINI_UNAVAILABLE',
+      code: 'AI_SERVICE_UNAVAILABLE',
     });
   }
 });

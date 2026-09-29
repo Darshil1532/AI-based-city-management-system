@@ -32,6 +32,13 @@ function sanitizeForFirestore(obj: any): any {
   return clean;
 }
 
+export class DatabasePersistenceError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'DatabasePersistenceError';
+  }
+}
+
 /**
  * Authoritative Server Complaint Service
  * 
@@ -102,9 +109,17 @@ export class ComplaintService {
     if (process.env.NODE_ENV === 'test') return;
     try {
       const adminDb = getAdminFirestore();
-      if (!adminDb) return;
+      if (!adminDb) {
+        if (process.env.NODE_ENV === 'production') {
+          throw new DatabasePersistenceError('Authoritative Firestore Admin database is unavailable in production.');
+        }
+        return;
+      }
       await adminDb.collection('complaints').doc(complaint.id).set(sanitizeForFirestore(complaint), { merge: true });
     } catch (err: any) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new DatabasePersistenceError(`Firestore write failed: ${err?.message || err}`);
+      }
       console.info(`[ComplaintService] Firestore persistence notice for ${complaint.id}:`, err?.message || err);
     }
   }
@@ -203,7 +218,7 @@ export class ComplaintService {
   /**
    * Create a new complaint directly on the server with user ownership bound.
    */
-  createComplaint(
+  async createComplaint(
     data: {
       title: string;
       description: string;
@@ -230,7 +245,7 @@ export class ComplaintService {
       };
     },
     user: AuthenticatedUser
-  ): Complaint {
+  ): Promise<Complaint> {
     const now = new Date().toISOString();
     const newId = this.generateUniqueId();
 
@@ -297,14 +312,14 @@ export class ComplaintService {
     };
 
     this.complaints.unshift(newComplaint);
-    this.persistToFirestore(newComplaint);
+    await this.persistToFirestore(newComplaint);
     return newComplaint;
   }
 
   /**
    * Human-in-the-loop review: Ratify or Override
    */
-  reviewAIRecommendation(
+  async reviewAIRecommendation(
     id: string,
     params: {
       decision: 'ratified' | 'overridden';
@@ -314,7 +329,7 @@ export class ComplaintService {
       notes?: string;
     },
     user: AuthenticatedUser
-  ): { success: boolean; complaint?: Complaint; error?: string } {
+  ): Promise<{ success: boolean; complaint?: Complaint; error?: string }> {
     const complaint = this.getById(id);
     if (!complaint) return { success: false, error: 'Complaint not found' };
 
@@ -359,14 +374,14 @@ export class ComplaintService {
     });
 
     complaint.updatedAt = now;
-    this.persistToFirestore(complaint);
+    await this.persistToFirestore(complaint);
     return { success: true, complaint };
   }
 
   /**
    * Assign department and officer
    */
-  assignDepartment(
+  async assignDepartment(
     id: string,
     params: {
       department: DepartmentName;
@@ -374,7 +389,7 @@ export class ComplaintService {
       notes?: string;
     },
     user: AuthenticatedUser
-  ): { success: boolean; complaint?: Complaint; error?: string } {
+  ): Promise<{ success: boolean; complaint?: Complaint; error?: string }> {
     const complaint = this.getById(id);
     if (!complaint) return { success: false, error: 'Complaint not found' };
 
@@ -402,7 +417,7 @@ export class ComplaintService {
     });
 
     complaint.updatedAt = now;
-    this.persistToFirestore(complaint);
+    await this.persistToFirestore(complaint);
     return { success: true, complaint };
   }
 
@@ -411,7 +426,7 @@ export class ComplaintService {
    * submitted -> assigned -> in_progress -> resolved
    * submitted -> resolved rejected without explicit overrideRationale!
    */
-  updateStatus(
+  async updateStatus(
     id: string,
     params: {
       status: ComplaintStatus;
@@ -421,7 +436,7 @@ export class ComplaintService {
       officerSignature?: string;
     },
     user: AuthenticatedUser
-  ): { success: boolean; complaint?: Complaint; error?: string; code?: string } {
+  ): Promise<{ success: boolean; complaint?: Complaint; error?: string; code?: string }> {
     const complaint = this.getById(id);
     if (!complaint) return { success: false, error: 'Complaint not found', code: 'NOT_FOUND' };
 
@@ -472,7 +487,7 @@ export class ComplaintService {
     if (params.resolutionDetails) {
       complaint.resolutionDetails = params.resolutionDetails;
       complaint.resolvedAt = now;
-      complaint.resolvedBy = user.name;
+      complaint.resolvedBy = params.officerSignature || user.name;
     }
     if (params.officerSignature) {
       complaint.assignedOfficer = params.officerSignature;
@@ -490,14 +505,14 @@ export class ComplaintService {
     });
 
     complaint.updatedAt = now;
-    this.persistToFirestore(complaint);
+    await this.persistToFirestore(complaint);
     return { success: true, complaint };
   }
 
   /**
    * Resolve complaint with mandatory resolution parameters
    */
-  resolveComplaint(
+  async resolveComplaint(
     id: string,
     params: {
       resolutionDetails: string;
@@ -505,7 +520,7 @@ export class ComplaintService {
       overrideRationale?: string;
     },
     user: AuthenticatedUser
-  ): { success: boolean; complaint?: Complaint; error?: string; code?: string } {
+  ): Promise<{ success: boolean; complaint?: Complaint; error?: string; code?: string }> {
     return this.updateStatus(
       id,
       {

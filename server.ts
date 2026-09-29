@@ -1,9 +1,12 @@
 import path from 'path';
 import { app } from './server/app';
+import { assertProductionReadyConfig } from './server/lib/firebaseAdmin';
 
 const PORT = 3000;
 
 async function startServer() {
+  // Fail-fast in production if required Firebase Admin credentials are not provided
+  assertProductionReadyConfig();
   if (process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({

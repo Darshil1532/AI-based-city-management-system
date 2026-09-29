@@ -68,6 +68,7 @@ export const ReportIssuePage: React.FC = () => {
     description?: string;
     location?: string;
     image?: string;
+    general?: string;
   }>({});
 
   // Debounced live heuristic preview to prevent excessive computation on rapid keystrokes
@@ -112,17 +113,18 @@ export const ReportIssuePage: React.FC = () => {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     setIsSubmitting(true);
+    setFormErrors((prev) => ({ ...prev, general: undefined }));
 
-    setTimeout(() => {
+    try {
       const sanitizedName = citizenName.trim().slice(0, 80) || 'Anonymous Citizen';
       const sanitizedPhone = citizenPhone.trim().slice(0, 30);
 
-      const newComplaint = submitComplaint({
+      const newComplaint = await submitComplaint({
         description: description.trim(),
         category,
         severity,
@@ -134,7 +136,13 @@ export const ReportIssuePage: React.FC = () => {
 
       setIsSubmitting(false);
       navigate(`/confirmation/${newComplaint.id}`);
-    }, 600);
+    } catch (err: any) {
+      setIsSubmitting(false);
+      setFormErrors((prev) => ({
+        ...prev,
+        general: err?.message || 'Failed to submit complaint to municipal intake server. Please try again.',
+      }));
+    }
   };
 
   const handleCustomFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -465,7 +473,13 @@ export const ReportIssuePage: React.FC = () => {
             </div>
 
             {/* Submit Button */}
-            <div className="pt-3">
+            <div className="pt-3 space-y-2">
+              {formErrors.general && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                  <span>{formErrors.general}</span>
+                </div>
+              )}
               <button
                 type="submit"
                 disabled={isSubmitting || !description.trim()}

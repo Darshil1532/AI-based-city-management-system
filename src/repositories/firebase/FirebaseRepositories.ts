@@ -1,11 +1,10 @@
 import {
   collection,
   doc,
-  setDoc,
   getDocs,
   onSnapshot,
 } from 'firebase/firestore';
-import { db, auth, handleFirestoreError, OperationType } from '../../lib/firebase';
+import { db, auth } from '../../lib/firebase';
 import {
   IComplaintRepository,
   IInsightRepository,
@@ -169,20 +168,7 @@ export class FirebaseComplaintRepository implements IComplaintRepository {
   }
 
   private async seedToFirestore(): Promise<void> {
-    try {
-      // Only seed initial records if authenticated as admin or authorized user
-      if (!auth.currentUser) {
-        return;
-      }
-      for (const complaint of INITIAL_COMPLAINTS.slice(0, 5)) {
-        await setDoc(doc(db, 'complaints', complaint.id), sanitizeForFirestore(complaint), { merge: true });
-      }
-    } catch (err) {
-      if ((err as any)?.code === 'permission-denied') {
-        handleFirestoreError(err, OperationType.WRITE, 'complaints');
-      }
-      console.info('[FirebaseComplaintRepository] Background seed notice:', err);
-    }
+    // Authoritative seeding and writes are handled exclusively by Express backend via Firebase Admin SDK
   }
 
   getAll(): Complaint[] {
@@ -200,16 +186,7 @@ export class FirebaseComplaintRepository implements IComplaintRepository {
   create(complaint: Complaint): Complaint {
     this.complaints.unshift(complaint);
     this.persistCache();
-
-    // Async write to Firestore
-    setDoc(doc(db, 'complaints', complaint.id), sanitizeForFirestore(complaint))
-      .catch((err) => {
-        if (err?.code === 'permission-denied') {
-          handleFirestoreError(err, OperationType.CREATE, `complaints/${complaint.id}`);
-        }
-        console.warn('[Firebase] Complaint sync error:', err);
-      });
-
+    // Authoritative persistence managed by Express API
     return complaint;
   }
 
@@ -223,16 +200,7 @@ export class FirebaseComplaintRepository implements IComplaintRepository {
       updatedAt: new Date().toISOString(),
     };
     this.persistCache();
-
-    // Async update to Firestore
-    setDoc(doc(db, 'complaints', id), sanitizeForFirestore(updates), { merge: true })
-      .catch((err) => {
-        if (err?.code === 'permission-denied') {
-          handleFirestoreError(err, OperationType.UPDATE, `complaints/${id}`);
-        }
-        console.warn('[Firebase] Complaint update sync error:', err);
-      });
-
+    // Authoritative persistence managed by Express API
     return this.complaints[idx];
   }
 
@@ -333,12 +301,7 @@ export class FirebaseInsightRepository implements IInsightRepository {
   create(insight: AIInsight): AIInsight {
     this.insights.unshift(insight);
     this.persistCache();
-    setDoc(doc(db, 'insights', insight.id), sanitizeForFirestore(insight))
-      .catch((err) => {
-        if (err?.code === 'permission-denied') {
-          handleFirestoreError(err, OperationType.CREATE, `insights/${insight.id}`);
-        }
-      });
+    // Authoritative persistence managed by Express API
     return insight;
   }
 
@@ -347,12 +310,7 @@ export class FirebaseInsightRepository implements IInsightRepository {
     if (idx === -1) return undefined;
     this.insights[idx] = { ...this.insights[idx], ...updates };
     this.persistCache();
-    setDoc(doc(db, 'insights', id), sanitizeForFirestore(updates), { merge: true })
-      .catch((err) => {
-        if (err?.code === 'permission-denied') {
-          handleFirestoreError(err, OperationType.UPDATE, `insights/${id}`);
-        }
-      });
+    // Authoritative persistence managed by Express API
     return this.insights[idx];
   }
 
@@ -454,12 +412,7 @@ export class FirebaseNotificationRepository implements INotificationRepository {
   create(notification: NotificationItem): NotificationItem {
     this.notifications.unshift(notification);
     this.persistCache();
-    setDoc(doc(db, 'notifications', notification.id), sanitizeForFirestore(notification))
-      .catch((err) => {
-        if (err?.code === 'permission-denied') {
-          handleFirestoreError(err, OperationType.CREATE, `notifications/${notification.id}`);
-        }
-      });
+    // Authoritative persistence managed by Express API
     return notification;
   }
 
