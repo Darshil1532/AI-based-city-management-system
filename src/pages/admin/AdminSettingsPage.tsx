@@ -138,11 +138,11 @@ export const AdminSettingsPage: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-slate-900 font-bold font-mono">
-              AI Provider: {aiProviderType === 'Gemini' ? 'Gemini 3.1 Flash Lite' : 'Demo AI'}
+              AI Provider: {aiProviderType === 'Gemini' ? 'SmartCity AI Engine' : 'Demo AI'}
             </p>
             <p className="text-[11px] text-slate-500 leading-relaxed">
               {aiProviderType === 'Gemini'
-                ? 'Gemini 3.1 Flash Lite (with automated Gemini 3.5 Flash Lite fallback) cloud inference for natural language understanding and priority dispatch recommendations. All actions require human administrator ratification.'
+                ? 'Cloud-based municipal AI decision-support inference for natural language understanding and priority dispatch recommendations. All actions require human administrator ratification.'
                 : 'Local rule-based municipal expert system for offline triage and keyword categorization. All actions require human administrator ratification.'}
             </p>
           </div>

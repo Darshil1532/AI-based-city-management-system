@@ -124,7 +124,7 @@ export const AICityAssistantModal: React.FC = () => {
       id: 'welcome',
       role: 'model',
       content:
-        'Hello! I am your SmartCity AI Civic Assistant powered by Gemini 3.1 Flash Lite. You can ask me how municipal services work, ask about city departments, or tell me about any civic issue you are facing. You can type or hold the microphone button below to speak.',
+        'Hello! I am your SmartCity AI Civic Assistant. You can ask me how municipal services work, ask about city departments, or tell me about any civic issue you are facing. You can type or hold the microphone button below to speak.',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -360,7 +360,7 @@ export const AICityAssistantModal: React.FC = () => {
         id: `err-${Date.now()}`,
         role: 'model',
         content:
-          'I apologize, I am temporarily having trouble reaching the Gemini service. Please check your internet connection or use the manual "Report an Issue" form.',
+          'I apologize, I am temporarily having trouble reaching the AI assistant service. Please check your internet connection or use the manual "Report an Issue" form.',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errMsg]);
@@ -497,7 +497,7 @@ export const AICityAssistantModal: React.FC = () => {
               <span className="text-xs font-bold leading-tight flex items-center gap-1.5">
                 <span>Ask City AI</span>
                 <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-md bg-blue-500/30 text-blue-200">
-                  Gemini
+                  Civic AI
                 </span>
               </span>
               <span className="text-[10px] text-slate-300 font-medium">Voice & Triage Assistant</span>
@@ -527,7 +527,7 @@ export const AICityAssistantModal: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <h3 className="text-xs font-bold text-white tracking-tight">SmartCity AI Assistant</h3>
                   <span className="text-[9px] font-mono bg-blue-500/30 text-blue-200 px-1.5 py-0.5 rounded-full font-semibold">
-                    Gemini 3.1 Flash Lite
+                    Civic AI
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] text-slate-300 mt-0.5">
@@ -606,7 +606,7 @@ export const AICityAssistantModal: React.FC = () => {
                     <ShieldCheck className="w-3 h-3" />
                     <span>{Math.round(draftedComplaint.confidence * 100)}% Confidence</span>
                   </span>
-                  <span className="text-[10px] text-slate-500 font-mono">Gemini 3.1</span>
+                  <span className="text-[10px] text-slate-500 font-mono">Municipal AI</span>
                 </div>
               </div>
 
@@ -688,7 +688,7 @@ export const AICityAssistantModal: React.FC = () => {
                     <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                       Full Engineering Description
                     </label>
-                    <span className="text-[10px] text-slate-400">Synthesized by Gemini</span>
+                    <span className="text-[10px] text-slate-400">Synthesized by Civic AI</span>
                   </div>
                   <textarea
                     rows={5}
@@ -961,7 +961,7 @@ export const AICityAssistantModal: React.FC = () => {
                 {isSending && (
                   <div className="flex items-center gap-2 text-xs text-slate-400 font-medium p-2">
                     <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-                    <span>Gemini 3.1 Flash Lite is responding...</span>
+                    <span>SmartCity AI is responding...</span>
                   </div>
                 )}
 
@@ -1133,7 +1133,7 @@ export const AICityAssistantModal: React.FC = () => {
 
                 <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-400 px-1">
                   <span>Hold mic to speak live • Tap Enter to chat</span>
-                  <span className="font-mono">Gemini 3.1</span>
+                  <span className="font-mono">SmartCity AI</span>
                 </div>
               </div>
             </>

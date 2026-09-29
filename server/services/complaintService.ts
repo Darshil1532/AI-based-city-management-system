@@ -270,7 +270,7 @@ export class ComplaintService {
             ? ` (Confidence: ${(data.aiAnalysis.confidence * 100).toFixed(0)}%)`
             : ' (Fallback decision support)'
         }. Human administrative validation pending.`,
-        actor: data.aiAnalysis.providerLabel || (data.aiAnalysis.provider === 'Gemini' ? 'Gemini 3.1 Flash Lite' : 'Demo AI'),
+        actor: data.aiAnalysis.providerLabel || (data.aiAnalysis.provider === 'Gemini' ? 'SmartCity AI Engine' : 'Demo AI'),
         badgeType: 'ai',
       });
     }

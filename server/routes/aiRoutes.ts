@@ -250,7 +250,7 @@ aiRouter.post('/ai/insights', aiRateLimiter, async (req: Request, res: Response)
   }
 });
 
-// POST /api/ai/chat - Dynamic civic assistant conversation using Gemini 3.1 Flash Lite
+// POST /api/ai/chat - Dynamic civic assistant conversation using SmartCity AI Engine
 aiRouter.post('/ai/chat', aiRateLimiter, async (req: Request, res: Response) => {
   const reqValidation = ChatRequestSchema.safeParse(req.body);
   if (!reqValidation.success) {

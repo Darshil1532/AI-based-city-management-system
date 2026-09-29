@@ -9,7 +9,7 @@ import { DemoAIProvider } from './DemoAIProvider';
 
 export class GeminiProvider implements IAIProvider {
   name: 'Gemini' = 'Gemini';
-  label: string = 'Gemini 3.1 Flash Lite';
+  label: string = 'SmartCity AI Engine';
   private fallbackProvider: DemoAIProvider = new DemoAIProvider();
 
   async isAvailable(): Promise<boolean> {
@@ -56,8 +56,8 @@ export class GeminiProvider implements IAIProvider {
             department: data.department,
             confidence: data.confidence || 0.94,
             confidencePercent: Math.round((data.confidence || 0.94) * 100),
-            reasoning: data.reasoning || 'Gemini decision-support model analyzed complaint text and municipal geographic features.',
-            factors: data.factors || ['Gemini natural language parsing of issue severity'],
+            reasoning: data.reasoning || 'Municipal AI decision-support model analyzed complaint text and geographic features.',
+            factors: data.factors || ['Natural language parsing of civic issue urgency'],
             publicImpactScore: data.publicImpactScore || 7,
             urgencyIndicators: data.urgencyIndicators || [],
             provider: 'Gemini',

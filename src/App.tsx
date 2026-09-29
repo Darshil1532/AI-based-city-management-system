@@ -54,7 +54,7 @@ const AppLayout: React.FC = () => {
       {/* Global Command Bar & Database Search Palette */}
       <GlobalCommandBar />
 
-      {/* Floating AI Civic Assistant (Voice & Chat with Gemini 3.1 Flash Lite) */}
+      {/* Floating AI Civic Assistant (Voice & Chat with SmartCity AI Engine) */}
       <AICityAssistantModal />
 
       {/* Top Bar Header */}

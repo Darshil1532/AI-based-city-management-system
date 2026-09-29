@@ -74,7 +74,7 @@ export class AIServiceManager {
   }
 
   // Fast synchronous analysis for real-time live preview as user types.
-  // Clearly labeled as Heuristic Preview — not Gemini.
+  // Clearly labeled as Heuristic Rule Preview.
   // Removes dead/unused async code and avoids fake confidence scores.
   analyzeComplaintSync(
     description: string,
@@ -97,7 +97,7 @@ export class AIServiceManager {
       ...heuristicResult,
       isHeuristicPreview: true,
       provider: 'Demo AI',
-      providerLabel: 'Heuristic Preview — not Gemini',
+      providerLabel: 'Heuristic Rule Preview',
       confidence: undefined,
       confidencePercent: undefined,
       reasoning: `Heuristic rule-based preview based on civic keywords and user inputs. Official AI decision-support analysis will be processed using ${targetModel} upon submission.`,

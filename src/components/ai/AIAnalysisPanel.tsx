@@ -29,7 +29,7 @@ export const AIAnalysisPanel: React.FC<AIAnalysisPanelProps> = ({
   const isHeuristicPreview = (directAnalysis as any)?.isHeuristicPreview;
   const rawProvider = directAnalysis ? directAnalysis.provider : complaint?.aiProvider;
   const rawProviderLabel = directAnalysis ? (directAnalysis as any).providerLabel : (complaint as any)?.aiProviderLabel;
-  const providerDisplay = rawProviderLabel || (rawProvider === 'Gemini' ? 'Gemini 3.1 Flash Lite' : 'Demo AI');
+  const providerDisplay = rawProviderLabel || (rawProvider === 'Gemini' ? 'SmartCity AI Engine' : 'Civic AI Engine');
   const category = directAnalysis ? directAnalysis.category : complaint?.aiCategory;
   const priority = directAnalysis ? directAnalysis.priority : complaint?.aiPriority;
   const department = directAnalysis ? directAnalysis.department : complaint?.aiDepartment;
@@ -72,7 +72,7 @@ export const AIAnalysisPanel: React.FC<AIAnalysisPanelProps> = ({
               </h3>
               {isHeuristicPreview ? (
                 <span className="px-2.5 py-0.5 rounded-xl text-[10px] font-bold clay-badge clay-badge-amber font-mono">
-                  Heuristic Preview — not Gemini
+                  Heuristic Rule Preview
                 </span>
               ) : (
                 <span className="px-2.5 py-0.5 rounded-xl text-[10px] font-bold clay-badge clay-badge-blue">
