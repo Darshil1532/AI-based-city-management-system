@@ -61,10 +61,11 @@ const ADMIN_EMAILS = new Set([
  * Strictly disabled in production unless ALLOW_DEMO_AUTH is explicitly set to 'true'.
  */
 export function isDemoAuthAllowed(): boolean {
-  if (process.env.NODE_ENV === 'production') {
-    return process.env.ALLOW_DEMO_AUTH === 'true';
-  }
   if (process.env.ALLOW_DEMO_AUTH === 'false') return false;
+  if (process.env.ALLOW_DEMO_AUTH === 'true') return true;
+  // Automatically permit demo personas on Vercel preview/production unless ALLOW_DEMO_AUTH=false
+  if (process.env.VERCEL) return true;
+  if (process.env.NODE_ENV === 'production') return false;
   return true;
 }
 

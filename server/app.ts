@@ -12,9 +12,11 @@ export function createApp() {
   // Body parser with size limit protection
   app.use(express.json({ limit: '64kb' }));
 
-  // Mount API routers
+  // Mount API routers (both /api and root to guarantee matching on Vercel rewrites)
   app.use('/api', aiRouter);
   app.use('/api', civicApiRouter);
+  app.use(aiRouter);
+  app.use(civicApiRouter);
 
   // Global error handler
   app.use(errorHandler);

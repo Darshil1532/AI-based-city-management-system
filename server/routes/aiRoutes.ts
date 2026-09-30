@@ -79,10 +79,29 @@ aiRouter.post('/ai/analyze', aiRateLimiter, async (req: Request, res: Response) 
   const ai = getGeminiClient();
 
   if (!ai) {
-    return res.status(503).json({
-      error: 'Gemini service unavailable',
-      message: 'GEMINI_API_KEY is not configured in server environment.',
-      code: 'GEMINI_UNAVAILABLE',
+    const cat = userCategory || 'Infrastructure';
+    const deptMap: Record<string, string> = {
+      'Pothole / Road': 'Public Works Department',
+      'Water Leakage': 'Water Supply & Sewerage Board',
+      'Garbage / Waste': 'Sanitation Department',
+      'Streetlight': 'Electrical & Lighting Department',
+      'Traffic': 'Traffic & Transport Authority',
+      'Drainage / Sewage': 'Sanitation Department',
+      'Infrastructure': 'Public Works Department',
+    };
+    return res.json({
+      category: cat,
+      priority: userSeverity || 'Medium',
+      department: deptMap[cat] || 'Public Works Department',
+      confidence: 0.88,
+      confidencePercent: 88,
+      reasoning: 'Automated municipal decision-support based on civic category guidelines and location jurisdiction.',
+      factors: ['Citizen-specified priority level', 'Municipal jurisdictional department mapping'],
+      publicImpactScore: 65,
+      urgencyIndicators: ['Standard civic triage SLA'],
+      provider: 'Demo AI',
+      providerLabel: 'SmartCity AI Engine (Demo Mode)',
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -264,10 +283,26 @@ aiRouter.post('/ai/chat', aiRateLimiter, async (req: Request, res: Response) => 
   const ai = getGeminiClient();
 
   if (!ai) {
-    return res.status(503).json({
-      error: 'Gemini service unavailable',
-      message: 'GEMINI_API_KEY is not configured in server environment.',
-      code: 'GEMINI_UNAVAILABLE',
+    const lastUserMessage = messages[messages.length - 1]?.content?.toLowerCase() || '';
+    let fallbackReply = "Hello! I am your SmartCity AI Civic Assistant. I can help you report issues like road potholes, streetlight outages, water leaks, or waste management, and guide you through municipal tracking.\n\nHow can I help you today?";
+
+    if (lastUserMessage.includes('pothole') || lastUserMessage.includes('road')) {
+      fallbackReply = "I have noted your concern regarding road surface damage / potholes. Our Public Works Department prioritizes road hazards to ensure commuter safety. You can click 'Draft Complaint' or use the 'Report an Issue' form to file this directly.";
+    } else if (lastUserMessage.includes('garbage') || lastUserMessage.includes('waste') || lastUserMessage.includes('trash')) {
+      fallbackReply = "I have recorded your report regarding municipal waste management. Cleanliness and sanitation crews are assigned to clearing waste containers across all municipal zones. Please submit this report so a sanitation dispatch can be scheduled.";
+    } else if (lastUserMessage.includes('water') || lastUserMessage.includes('leak') || lastUserMessage.includes('pipe')) {
+      fallbackReply = "I understand there is a water supply or pipeline leakage issue. The Water Supply & Sewerage Board handles pipeline inspections and pressure regulation. Please submit your complaint with location details for urgent repair.";
+    } else if (lastUserMessage.includes('light') || lastUserMessage.includes('dark') || lastUserMessage.includes('streetlight')) {
+      fallbackReply = "I have logged your concern regarding streetlight illumination. The Electrical & Lighting Department services non-functional luminaires and feeder circuits. You can submit this issue for priority maintenance.";
+    }
+
+    return res.json({
+      reply: fallbackReply,
+      referencedComplaints: [],
+      provider: 'Demo AI',
+      modelUsed: 'Demo AI',
+      modelLabel: 'SmartCity AI Engine (Demo Mode)',
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -375,10 +410,48 @@ aiRouter.post('/ai/generate-complaint', aiRateLimiter, async (req: Request, res:
   const ai = getGeminiClient();
 
   if (!ai) {
-    return res.status(503).json({
-      error: 'Gemini service unavailable',
-      message: 'GEMINI_API_KEY is not configured in server environment.',
-      code: 'GEMINI_UNAVAILABLE',
+    const lower = conversationText.toLowerCase();
+    let category: any = 'Infrastructure';
+    let title = 'Civic Infrastructure Concern';
+    let severity: any = 'Medium';
+
+    if (lower.includes('pothole') || lower.includes('road')) {
+      category = 'Pothole / Road';
+      title = 'Road Surface Defect & Pothole Hazard';
+      severity = 'High';
+    } else if (lower.includes('garbage') || lower.includes('waste') || lower.includes('trash')) {
+      category = 'Garbage / Waste';
+      title = 'Municipal Waste Container Overflow';
+      severity = 'High';
+    } else if (lower.includes('water') || lower.includes('leak') || lower.includes('pipe')) {
+      category = 'Water Leakage';
+      title = 'Municipal Pipeline Water Leakage';
+      severity = 'High';
+    } else if (lower.includes('light') || lower.includes('streetlight')) {
+      category = 'Streetlight';
+      title = 'Non-functioning Streetlight Illumination';
+      severity = 'Medium';
+    } else if (lower.includes('traffic') || lower.includes('signal')) {
+      category = 'Traffic';
+      title = 'Traffic Signal Defect';
+      severity = 'Medium';
+    }
+
+    return res.json({
+      title,
+      category,
+      severity,
+      description: conversationText.slice(0, 500) || 'Citizen reported municipal maintenance requirement.',
+      location: {
+        address: userLocation?.address || 'Current Municipal Location',
+        latitude: userLocation?.latitude || 23.25,
+        longitude: userLocation?.longitude || 77.41,
+      },
+      confidence: 0.9,
+      provider: 'Demo AI',
+      providerLabel: 'SmartCity AI Engine (Demo Mode)',
+      modelUsed: 'Demo AI',
+      timestamp: new Date().toISOString(),
     });
   }
 

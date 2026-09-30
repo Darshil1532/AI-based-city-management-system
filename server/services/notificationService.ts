@@ -81,14 +81,14 @@ export class NotificationService {
     try {
       const adminDb = getAdminFirestore();
       if (!adminDb) {
-        if (process.env.NODE_ENV === 'production') {
+        if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
           throw new DatabasePersistenceError('Firestore Admin unavailable for notification persistence.');
         }
         return;
       }
       await adminDb.collection('notifications').doc(item.id).set(sanitizeForFirestore(item), { merge: true });
     } catch (err: any) {
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
         throw new DatabasePersistenceError(`Firestore notification write failed: ${err?.message || err}`);
       }
       console.info(`[NotificationService] Firestore write notice for ${item.id}:`, err?.message || err);

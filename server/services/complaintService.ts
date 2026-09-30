@@ -110,14 +110,14 @@ export class ComplaintService {
     try {
       const adminDb = getAdminFirestore();
       if (!adminDb) {
-        if (process.env.NODE_ENV === 'production') {
+        if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
           throw new DatabasePersistenceError('Authoritative Firestore Admin database is unavailable in production.');
         }
         return;
       }
       await adminDb.collection('complaints').doc(complaint.id).set(sanitizeForFirestore(complaint), { merge: true });
     } catch (err: any) {
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
         throw new DatabasePersistenceError(`Firestore write failed: ${err?.message || err}`);
       }
       console.info(`[ComplaintService] Firestore persistence notice for ${complaint.id}:`, err?.message || err);

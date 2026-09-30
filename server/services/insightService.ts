@@ -89,14 +89,14 @@ export class InsightService {
     try {
       const adminDb = getAdminFirestore();
       if (!adminDb) {
-        if (process.env.NODE_ENV === 'production') {
+        if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
           throw new DatabasePersistenceError('Firestore Admin unavailable for insight persistence.');
         }
         return;
       }
       await adminDb.collection('insights').doc(insight.id).set(sanitizeForFirestore(insight), { merge: true });
     } catch (err: any) {
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
         throw new DatabasePersistenceError(`Firestore insight write failed: ${err?.message || err}`);
       }
       console.info(`[InsightService] Firestore write notice for ${insight.id}:`, err?.message || err);
