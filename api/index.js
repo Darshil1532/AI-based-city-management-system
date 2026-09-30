@@ -54029,6 +54029,39 @@ var require_app = __commonJS({
   }
 });
 
+// node_modules/firebase-admin/lib/esm/app/index.js
+var app_exports = {};
+__export(app_exports, {
+  AppErrorCode: () => AppErrorCode,
+  FirebaseAppError: () => FirebaseAppError,
+  FirebaseError: () => FirebaseError,
+  SDK_VERSION: () => SDK_VERSION2,
+  applicationDefault: () => applicationDefault,
+  cert: () => cert,
+  deleteApp: () => deleteApp,
+  getApp: () => getApp,
+  getApps: () => getApps,
+  initializeApp: () => initializeApp,
+  refreshToken: () => refreshToken
+});
+var import_app, AppErrorCode, FirebaseAppError, FirebaseError, SDK_VERSION2, applicationDefault, cert, deleteApp, getApp, getApps, initializeApp, refreshToken;
+var init_app = __esm({
+  "node_modules/firebase-admin/lib/esm/app/index.js"() {
+    import_app = __toESM(require_app(), 1);
+    AppErrorCode = import_app.default.AppErrorCode;
+    FirebaseAppError = import_app.default.FirebaseAppError;
+    FirebaseError = import_app.default.FirebaseError;
+    SDK_VERSION2 = import_app.default.SDK_VERSION;
+    applicationDefault = import_app.default.applicationDefault;
+    cert = import_app.default.cert;
+    deleteApp = import_app.default.deleteApp;
+    getApp = import_app.default.getApp;
+    getApps = import_app.default.getApps;
+    initializeApp = import_app.default.initializeApp;
+    refreshToken = import_app.default.refreshToken;
+  }
+});
+
 // node_modules/firebase-admin/lib/auth/error.js
 var require_error3 = __commonJS({
   "node_modules/firebase-admin/lib/auth/error.js"(exports) {
@@ -72579,6 +72612,49 @@ var require_auth2 = __commonJS({
     Object.defineProperty(exports, "AuthErrorCode", { enumerable: true, get: function() {
       return error_1.AuthErrorCode;
     } });
+  }
+});
+
+// node_modules/firebase-admin/lib/esm/auth/index.js
+var auth_exports = {};
+__export(auth_exports, {
+  Auth: () => Auth,
+  AuthErrorCode: () => AuthErrorCode,
+  BaseAuth: () => BaseAuth,
+  FirebaseAuthError: () => FirebaseAuthError,
+  MultiFactorInfo: () => MultiFactorInfo,
+  MultiFactorSettings: () => MultiFactorSettings,
+  PhoneMultiFactorInfo: () => PhoneMultiFactorInfo,
+  ProjectConfig: () => ProjectConfig,
+  ProjectConfigManager: () => ProjectConfigManager,
+  Tenant: () => Tenant,
+  TenantAwareAuth: () => TenantAwareAuth,
+  TenantManager: () => TenantManager,
+  UserInfo: () => UserInfo,
+  UserMetadata: () => UserMetadata,
+  UserRecord: () => UserRecord,
+  getAuth: () => getAuth
+});
+var import_auth, Auth, AuthErrorCode, BaseAuth, FirebaseAuthError, MultiFactorInfo, MultiFactorSettings, PhoneMultiFactorInfo, ProjectConfig, ProjectConfigManager, Tenant, TenantAwareAuth, TenantManager, UserInfo, UserMetadata, UserRecord, getAuth;
+var init_auth = __esm({
+  "node_modules/firebase-admin/lib/esm/auth/index.js"() {
+    import_auth = __toESM(require_auth2(), 1);
+    Auth = import_auth.default.Auth;
+    AuthErrorCode = import_auth.default.AuthErrorCode;
+    BaseAuth = import_auth.default.BaseAuth;
+    FirebaseAuthError = import_auth.default.FirebaseAuthError;
+    MultiFactorInfo = import_auth.default.MultiFactorInfo;
+    MultiFactorSettings = import_auth.default.MultiFactorSettings;
+    PhoneMultiFactorInfo = import_auth.default.PhoneMultiFactorInfo;
+    ProjectConfig = import_auth.default.ProjectConfig;
+    ProjectConfigManager = import_auth.default.ProjectConfigManager;
+    Tenant = import_auth.default.Tenant;
+    TenantAwareAuth = import_auth.default.TenantAwareAuth;
+    TenantManager = import_auth.default.TenantManager;
+    UserInfo = import_auth.default.UserInfo;
+    UserMetadata = import_auth.default.UserMetadata;
+    UserRecord = import_auth.default.UserRecord;
+    getAuth = import_auth.default.getAuth;
   }
 });
 
@@ -227592,7 +227668,7 @@ var require_src27 = __commonJS({
     exports.DEFAULT_MAX_TRANSACTION_ATTEMPTS = 5;
     exports.DEFAULT_MAX_IDLE_CHANNELS = 1;
     var MAX_CONCURRENT_REQUESTS_PER_CLIENT = 100;
-    var Firestore3 = class {
+    var Firestore2 = class {
       /**
        * A client pool to distribute requests over multiple GAPIC clients in order
        * to work around a connection limit of 100 concurrent requests per client.
@@ -228691,10 +228767,10 @@ var require_src27 = __commonJS({
         });
       }
     };
-    exports.Firestore = Firestore3;
-    exports.default = Firestore3;
+    exports.Firestore = Firestore2;
+    exports.default = Firestore2;
     var existingExports = module.exports;
-    module.exports = Firestore3;
+    module.exports = Firestore2;
     module.exports = Object.assign(module.exports, existingExports);
     var cachedV1beta1;
     Object.defineProperty(module.exports, "v1beta1", {
@@ -228962,6 +229038,75 @@ var require_firestore = __commonJS({
   }
 });
 
+// node_modules/firebase-admin/lib/esm/firestore/index.js
+var firestore_exports = {};
+__export(firestore_exports, {
+  AggregateField: () => AggregateField,
+  AggregateQuery: () => AggregateQuery,
+  AggregateQuerySnapshot: () => AggregateQuerySnapshot,
+  BulkWriter: () => BulkWriter,
+  BundleBuilder: () => BundleBuilder,
+  CollectionGroup: () => CollectionGroup,
+  CollectionReference: () => CollectionReference,
+  DocumentReference: () => DocumentReference,
+  DocumentSnapshot: () => DocumentSnapshot,
+  FieldPath: () => FieldPath,
+  FieldValue: () => FieldValue,
+  Filter: () => Filter,
+  FirebaseFirestoreError: () => FirebaseFirestoreError,
+  Firestore: () => Firestore,
+  FirestoreErrorCode: () => FirestoreErrorCode,
+  GeoPoint: () => GeoPoint,
+  GrpcStatus: () => GrpcStatus,
+  Query: () => Query,
+  QueryDocumentSnapshot: () => QueryDocumentSnapshot,
+  QueryPartition: () => QueryPartition,
+  QuerySnapshot: () => QuerySnapshot,
+  Timestamp: () => Timestamp,
+  Transaction: () => Transaction,
+  WriteBatch: () => WriteBatch,
+  WriteResult: () => WriteResult,
+  getFirestore: () => getFirestore,
+  initializeFirestore: () => initializeFirestore,
+  setLogFunction: () => setLogFunction,
+  v1: () => v1
+});
+var import_firestore, AggregateField, AggregateQuery, AggregateQuerySnapshot, BulkWriter, BundleBuilder, CollectionGroup, CollectionReference, DocumentReference, DocumentSnapshot, FieldPath, FieldValue, Filter, FirebaseFirestoreError, Firestore, FirestoreErrorCode, GeoPoint, GrpcStatus, Query, QueryDocumentSnapshot, QueryPartition, QuerySnapshot, Timestamp, Transaction, WriteBatch, WriteResult, getFirestore, initializeFirestore, setLogFunction, v1;
+var init_firestore = __esm({
+  "node_modules/firebase-admin/lib/esm/firestore/index.js"() {
+    import_firestore = __toESM(require_firestore(), 1);
+    AggregateField = import_firestore.default.AggregateField;
+    AggregateQuery = import_firestore.default.AggregateQuery;
+    AggregateQuerySnapshot = import_firestore.default.AggregateQuerySnapshot;
+    BulkWriter = import_firestore.default.BulkWriter;
+    BundleBuilder = import_firestore.default.BundleBuilder;
+    CollectionGroup = import_firestore.default.CollectionGroup;
+    CollectionReference = import_firestore.default.CollectionReference;
+    DocumentReference = import_firestore.default.DocumentReference;
+    DocumentSnapshot = import_firestore.default.DocumentSnapshot;
+    FieldPath = import_firestore.default.FieldPath;
+    FieldValue = import_firestore.default.FieldValue;
+    Filter = import_firestore.default.Filter;
+    FirebaseFirestoreError = import_firestore.default.FirebaseFirestoreError;
+    Firestore = import_firestore.default.Firestore;
+    FirestoreErrorCode = import_firestore.default.FirestoreErrorCode;
+    GeoPoint = import_firestore.default.GeoPoint;
+    GrpcStatus = import_firestore.default.GrpcStatus;
+    Query = import_firestore.default.Query;
+    QueryDocumentSnapshot = import_firestore.default.QueryDocumentSnapshot;
+    QueryPartition = import_firestore.default.QueryPartition;
+    QuerySnapshot = import_firestore.default.QuerySnapshot;
+    Timestamp = import_firestore.default.Timestamp;
+    Transaction = import_firestore.default.Transaction;
+    WriteBatch = import_firestore.default.WriteBatch;
+    WriteResult = import_firestore.default.WriteResult;
+    getFirestore = import_firestore.default.getFirestore;
+    initializeFirestore = import_firestore.default.initializeFirestore;
+    setLogFunction = import_firestore.default.setLogFunction;
+    v1 = import_firestore.default.v1;
+  }
+});
+
 // server/app.ts
 var import_express3 = __toESM(require_express2(), 1);
 var import_dotenv = __toESM(require_main(), 1);
@@ -228982,7 +229127,7 @@ function cleanupExpiredRecords(now) {
   }
 }
 function resolveClientIp(req) {
-  const trustProxy = process.env.TRUST_PROXY === "true" || req.app?.get("trust proxy");
+  const trustProxy = !!process.env.VERCEL || process.env.TRUST_PROXY === "true" || !!req.app?.get("trust proxy");
   if (trustProxy) {
     const forwarded = req.headers["x-forwarded-for"];
     if (typeof forwarded === "string") {
@@ -228993,8 +229138,16 @@ function resolveClientIp(req) {
     if (Array.isArray(forwarded) && forwarded[0]) {
       return forwarded[0].trim();
     }
+    const realIp = req.headers["x-real-ip"];
+    if (typeof realIp === "string" && realIp.trim()) {
+      return realIp.trim();
+    }
   }
-  return req.ip || req.socket.remoteAddress || "127.0.0.1";
+  try {
+    if (req.ip) return req.ip;
+  } catch {
+  }
+  return req.socket?.remoteAddress || req.connection?.remoteAddress || "127.0.0.1";
 }
 function aiRateLimiter(req, res, next) {
   const ip = resolveClientIp(req);
@@ -253324,71 +253477,6 @@ var INITIAL_HOTSPOTS = [
   }
 ];
 
-// node_modules/firebase-admin/lib/esm/app/index.js
-var import_app = __toESM(require_app(), 1);
-var AppErrorCode = import_app.default.AppErrorCode;
-var FirebaseAppError = import_app.default.FirebaseAppError;
-var FirebaseError = import_app.default.FirebaseError;
-var SDK_VERSION2 = import_app.default.SDK_VERSION;
-var applicationDefault = import_app.default.applicationDefault;
-var cert = import_app.default.cert;
-var deleteApp = import_app.default.deleteApp;
-var getApp = import_app.default.getApp;
-var getApps = import_app.default.getApps;
-var initializeApp = import_app.default.initializeApp;
-var refreshToken = import_app.default.refreshToken;
-
-// node_modules/firebase-admin/lib/esm/auth/index.js
-var import_auth = __toESM(require_auth2(), 1);
-var Auth = import_auth.default.Auth;
-var AuthErrorCode = import_auth.default.AuthErrorCode;
-var BaseAuth = import_auth.default.BaseAuth;
-var FirebaseAuthError = import_auth.default.FirebaseAuthError;
-var MultiFactorInfo = import_auth.default.MultiFactorInfo;
-var MultiFactorSettings = import_auth.default.MultiFactorSettings;
-var PhoneMultiFactorInfo = import_auth.default.PhoneMultiFactorInfo;
-var ProjectConfig = import_auth.default.ProjectConfig;
-var ProjectConfigManager = import_auth.default.ProjectConfigManager;
-var Tenant = import_auth.default.Tenant;
-var TenantAwareAuth = import_auth.default.TenantAwareAuth;
-var TenantManager = import_auth.default.TenantManager;
-var UserInfo = import_auth.default.UserInfo;
-var UserMetadata = import_auth.default.UserMetadata;
-var UserRecord = import_auth.default.UserRecord;
-var getAuth = import_auth.default.getAuth;
-
-// node_modules/firebase-admin/lib/esm/firestore/index.js
-var import_firestore = __toESM(require_firestore(), 1);
-var AggregateField = import_firestore.default.AggregateField;
-var AggregateQuery = import_firestore.default.AggregateQuery;
-var AggregateQuerySnapshot = import_firestore.default.AggregateQuerySnapshot;
-var BulkWriter = import_firestore.default.BulkWriter;
-var BundleBuilder = import_firestore.default.BundleBuilder;
-var CollectionGroup = import_firestore.default.CollectionGroup;
-var CollectionReference = import_firestore.default.CollectionReference;
-var DocumentReference = import_firestore.default.DocumentReference;
-var DocumentSnapshot = import_firestore.default.DocumentSnapshot;
-var FieldPath = import_firestore.default.FieldPath;
-var FieldValue = import_firestore.default.FieldValue;
-var Filter = import_firestore.default.Filter;
-var FirebaseFirestoreError = import_firestore.default.FirebaseFirestoreError;
-var Firestore = import_firestore.default.Firestore;
-var FirestoreErrorCode = import_firestore.default.FirestoreErrorCode;
-var GeoPoint = import_firestore.default.GeoPoint;
-var GrpcStatus = import_firestore.default.GrpcStatus;
-var Query = import_firestore.default.Query;
-var QueryDocumentSnapshot = import_firestore.default.QueryDocumentSnapshot;
-var QueryPartition = import_firestore.default.QueryPartition;
-var QuerySnapshot = import_firestore.default.QuerySnapshot;
-var Timestamp = import_firestore.default.Timestamp;
-var Transaction = import_firestore.default.Transaction;
-var WriteBatch = import_firestore.default.WriteBatch;
-var WriteResult = import_firestore.default.WriteResult;
-var getFirestore = import_firestore.default.getFirestore;
-var initializeFirestore = import_firestore.default.initializeFirestore;
-var setLogFunction = import_firestore.default.setLogFunction;
-var v1 = import_firestore.default.v1;
-
 // firebase-applet-config.json
 var firebase_applet_config_default = {
   projectId: "gen-lang-client-0857632644",
@@ -253405,84 +253493,77 @@ var firebase_applet_config_default = {
 
 // server/lib/firebaseAdmin.ts
 var adminApp = null;
-function getFirebaseAdminApp() {
+var syncFirestoreInstance = null;
+var firestoreInitPromise = null;
+async function getFirebaseAdminApp() {
   if (adminApp) return adminApp;
+  const hasCreds = !!process.env.FIREBASE_SERVICE_ACCOUNT || !!process.env.GOOGLE_APPLICATION_CREDENTIALS || !!process.env.FIRESTORE_EMULATOR_HOST;
+  if (!hasCreds) {
+    if (process.env.NODE_ENV === "production" && !process.env.VERCEL) {
+      throw new Error("[FirebaseAdmin] No valid credentials provided in production.");
+    }
+    return null;
+  }
   try {
-    const apps = getApps();
+    const { getApps: getApps2, initializeApp: initializeApp2, cert: cert2 } = await Promise.resolve().then(() => (init_app(), app_exports));
+    const apps = getApps2();
     if (apps.length > 0) {
       adminApp = apps[0];
       return adminApp;
     }
     const projectId = process.env.FIREBASE_PROJECT_ID || firebase_applet_config_default.projectId;
     if (!projectId) {
-      if (process.env.NODE_ENV === "production" && !process.env.VERCEL) {
-        throw new Error("[FirebaseAdmin] Missing Firebase project ID in production.");
-      }
       return null;
     }
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
       try {
         const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-        adminApp = initializeApp({
-          credential: cert(serviceAccount),
+        adminApp = initializeApp2({
+          credential: cert2(serviceAccount),
           projectId
         });
         return adminApp;
       } catch (e2) {
-        const msg = `[FirebaseAdmin] Failed to parse FIREBASE_SERVICE_ACCOUNT JSON: ${e2?.message || e2}`;
-        if (process.env.NODE_ENV === "production" && !process.env.VERCEL) {
-          throw new Error(msg);
-        }
-        console.warn(msg);
+        console.warn("[FirebaseAdmin] Failed to parse FIREBASE_SERVICE_ACCOUNT:", e2?.message || e2);
       }
     }
     if (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.FIRESTORE_EMULATOR_HOST) {
-      adminApp = initializeApp({
-        projectId
-      });
+      adminApp = initializeApp2({ projectId });
       return adminApp;
-    }
-    if (process.env.NODE_ENV === "production" && !process.env.VERCEL) {
-      throw new Error("[FirebaseAdmin] No valid credentials provided in production.");
     }
     return null;
   } catch (err) {
-    if (process.env.NODE_ENV === "production" && !process.env.VERCEL) {
-      throw err;
-    }
     console.info("[FirebaseAdmin] Admin SDK initialization notice:", err?.message || err);
     return null;
   }
 }
 async function verifyFirebaseIdToken(token) {
-  const app2 = getFirebaseAdminApp();
+  const app2 = await getFirebaseAdminApp();
   if (!app2) {
     throw new Error("Firebase Admin SDK is not configured for token verification.");
   }
-  return await getAuth(app2).verifyIdToken(token, true);
+  const { getAuth: getAuth2 } = await Promise.resolve().then(() => (init_auth(), auth_exports));
+  return await getAuth2(app2).verifyIdToken(token, true);
 }
 function getAdminFirestore() {
-  if (process.env.NODE_ENV === "production" && !process.env.VERCEL) {
-    const hasCredentials = !!process.env.FIREBASE_SERVICE_ACCOUNT || !!process.env.GOOGLE_APPLICATION_CREDENTIALS;
-    if (!hasCredentials) {
+  const hasCreds = !!process.env.FIREBASE_SERVICE_ACCOUNT || !!process.env.GOOGLE_APPLICATION_CREDENTIALS || !!process.env.FIRESTORE_EMULATOR_HOST;
+  if (!hasCreds) {
+    if (process.env.NODE_ENV === "production" && !process.env.VERCEL) {
       throw new Error("[FirebaseAdmin] Firestore Admin is required in production but credentials are not configured.");
     }
-  }
-  const app2 = getFirebaseAdminApp();
-  if (!app2) {
-    if (process.env.NODE_ENV === "production" && !process.env.VERCEL) {
-      throw new Error("[FirebaseAdmin] Firestore Admin is required in production but unavailable.");
-    }
     return null;
   }
-  try {
-    return getFirestore(app2);
-  } catch (err) {
-    if (process.env.NODE_ENV === "production" && !process.env.VERCEL) {
-      throw err;
-    }
-    return null;
+  if (syncFirestoreInstance) return syncFirestoreInstance;
+  if (!firestoreInitPromise) {
+    firestoreInitPromise = (async () => {
+      const app2 = await getFirebaseAdminApp();
+      if (!app2) return null;
+      const { getFirestore: getFirestore2 } = await Promise.resolve().then(() => (init_firestore(), firestore_exports));
+      syncFirestoreInstance = getFirestore2(app2);
+      return syncFirestoreInstance;
+    })();
   }
+  return syncFirestoreInstance;
 }
 
 // server/services/complaintService.ts
@@ -275134,7 +275215,7 @@ civicApiRouter.get("/admin/analytics", requireRole(["admin"]), (_req, res) => {
 
 // server/middleware/errorHandler.ts
 function errorHandler(err, req, res, _next) {
-  console.error(`[Server Error] [${req.method} ${req.url}]:`, err?.message || err);
+  console.error(`[Server Error] [${req.method} ${req.url}]:`, err?.stack || err?.message || err);
   const status = typeof err?.status === "number" ? err.status : 500;
   const code = err?.code || (status === 400 ? "INVALID_REQUEST" : status === 404 ? "NOT_FOUND" : "INTERNAL_ERROR");
   return res.status(status).json({
@@ -275160,11 +275241,21 @@ var app = createApp();
 // server/apiEntry.ts
 function handler(req, res) {
   try {
-    const matchedPath = req.headers?.["x-matched-path"];
+    if (!req.socket) {
+      req.socket = {
+        remoteAddress: typeof req.headers?.["x-forwarded-for"] === "string" ? req.headers["x-forwarded-for"].split(",")[0]?.trim() : "127.0.0.1",
+        encrypted: true
+      };
+    }
+    if (!req.connection) {
+      req.connection = req.socket;
+    }
+    const matchedPath = req.headers?.["x-matched-path"] || req.headers?.["x-vercel-matched-path"];
     if (matchedPath && typeof matchedPath === "string" && !matchedPath.includes("index.js")) {
       req.url = matchedPath;
-    } else if (req.url && (req.url === "/api/index.js" || req.url.startsWith("/api/index.js"))) {
-      req.url = req.url.replace("/api/index.js", "") || "/";
+    } else if (req.url && req.url.startsWith("/api/index.js")) {
+      const rest = req.url.slice("/api/index.js".length);
+      req.url = rest.startsWith("?") ? "/" + rest : rest || "/";
     }
     return app(req, res);
   } catch (err) {

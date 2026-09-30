@@ -27,7 +27,7 @@ function cleanupExpiredRecords(now: number) {
  * preventing IP spoofing and rate limit bypasses.
  */
 function resolveClientIp(req: Request): string {
-  const trustProxy = process.env.TRUST_PROXY === 'true' || req.app?.get('trust proxy');
+  const trustProxy = !!process.env.VERCEL || process.env.TRUST_PROXY === 'true' || !!req.app?.get('trust proxy');
   if (trustProxy) {
     const forwarded = req.headers['x-forwarded-for'];
     if (typeof forwarded === 'string') {
@@ -38,10 +38,19 @@ function resolveClientIp(req: Request): string {
     if (Array.isArray(forwarded) && forwarded[0]) {
       return forwarded[0].trim();
     }
+    const realIp = req.headers['x-real-ip'];
+    if (typeof realIp === 'string' && realIp.trim()) {
+      return realIp.trim();
+    }
   }
 
-  // Authoritative network socket address
-  return req.ip || req.socket.remoteAddress || '127.0.0.1';
+  // Authoritative network socket address with safe fallbacks
+  try {
+    if (req.ip) return req.ip;
+  } catch {
+    // Ignore getter failure if socket is mock or detached
+  }
+  return req.socket?.remoteAddress || (req as any).connection?.remoteAddress || '127.0.0.1';
 }
 
 export function aiRateLimiter(req: Request, res: Response, next: NextFunction) {
