@@ -190,15 +190,15 @@ export const AICityAssistantModal: React.FC = () => {
         setDraftedComplaint((prev) =>
           prev
             ? {
-                ...prev,
-                location: {
-                  latitude: lat,
-                  longitude: lng,
-                  address: geo.address,
-                  landmark: geo.landmark || prev.location.landmark,
-                  district: geo.district || prev.location.district,
-                },
-              }
+              ...prev,
+              location: {
+                latitude: lat,
+                longitude: lng,
+                address: geo.address,
+                landmark: geo.landmark || prev.location.landmark,
+                district: geo.district || prev.location.district,
+              },
+            }
             : null
         );
 
@@ -509,13 +509,12 @@ export const AICityAssistantModal: React.FC = () => {
       {/* Expanded Floating AI Assistant Box */}
       {isOpen && (
         <div
-          className={`fixed bottom-4 sm:bottom-6 right-4 sm:right-6 z-50 flex flex-col rounded-3xl clay-card overflow-hidden shadow-2xl border border-white/80 animate-in fade-in slide-in-from-bottom-5 duration-200 transition-all ${
-            isMaximized
-              ? 'w-[96vw] sm:w-[680px] h-[88vh] max-h-[88vh]'
-              : showReviewOverlay
+          className={`fixed bottom-4 sm:bottom-6 right-4 sm:right-6 z-50 flex flex-col rounded-3xl clay-card overflow-hidden shadow-2xl border border-white/80 animate-in fade-in slide-in-from-bottom-5 duration-200 transition-all ${isMaximized
+            ? 'w-[96vw] sm:w-[680px] h-[88vh] max-h-[88vh]'
+            : showReviewOverlay
               ? 'w-[94vw] sm:w-[580px] h-[720px] max-h-[92vh]'
               : 'w-[92vw] sm:w-[480px] h-[640px] max-h-[88vh]'
-          }`}
+            }`}
         >
           {/* Header Bar */}
           <div className="px-4 py-3.5 border-b border-slate-200/60 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between shrink-0">
@@ -855,11 +854,10 @@ export const AICityAssistantModal: React.FC = () => {
                       className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-full`}
                     >
                       <div
-                        className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed ${
-                          isUser
-                            ? 'clay-btn-blue text-white shadow-xs'
-                            : 'clay-card text-slate-800 border border-slate-100/90'
-                        }`}
+                        className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed ${isUser
+                          ? 'clay-btn-blue text-white shadow-xs'
+                          : 'clay-card text-slate-800 border border-slate-100/90'
+                          }`}
                       >
                         <p className="whitespace-pre-wrap">{m.content}</p>
 
@@ -1056,9 +1054,8 @@ export const AICityAssistantModal: React.FC = () => {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     title="Attach photo of the issue"
-                    className={`clay-btn clay-btn-secondary px-2.5 py-1 text-[10px] font-bold flex items-center gap-1 ${
-                      attachedImage ? 'text-emerald-700 bg-emerald-50' : 'text-slate-600'
-                    }`}
+                    className={`clay-btn clay-btn-secondary px-2.5 py-1 text-[10px] font-bold flex items-center gap-1 ${attachedImage ? 'text-emerald-700 bg-emerald-50' : 'text-slate-600'
+                      }`}
                   >
                     <ImageIcon className="w-3 h-3" />
                     <span>{attachedImage ? 'Photo Attached' : 'Attach Photo'}</span>
@@ -1107,11 +1104,10 @@ export const AICityAssistantModal: React.FC = () => {
                     onTouchStart={handleVoiceStart}
                     onTouchEnd={handleVoiceEnd}
                     title="Hold to speak (Google Voice to Text) / Release to send"
-                    className={`p-2.5 rounded-xl clay-btn transition-all ${
-                      isVoiceRecording
-                        ? 'bg-rose-600 text-white scale-110 shadow-lg animate-pulse ring-2 ring-rose-400'
-                        : 'clay-btn-secondary text-slate-700 hover:text-blue-600'
-                    }`}
+                    className={`p-2.5 rounded-xl clay-btn transition-all ${isVoiceRecording
+                      ? 'bg-rose-600 text-white scale-110 shadow-lg animate-pulse ring-2 ring-rose-400'
+                      : 'clay-btn-secondary text-slate-700 hover:text-blue-600'
+                      }`}
                   >
                     {isVoiceRecording ? (
                       <Mic className="w-4 h-4 animate-bounce" />
