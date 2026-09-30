@@ -256,6 +256,6 @@ This compiles:
 
 <div align="center">
 
-Made with ❤️ for Smarter, Safer, and Citizen-Centric Municipalities.
+Made Darshil Jha for Smarter, Safer, and Citizen-Centric Municipalities.
 
 </div>
