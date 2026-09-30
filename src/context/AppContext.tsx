@@ -148,6 +148,46 @@ export interface AppContextType {
   resetData: () => void;
 }
 
+function smartMergeComplaints(localList: Complaint[], incomingList: Complaint[]): Complaint[] {
+  const localMap = new Map<string, Complaint>();
+  localList.forEach((c) => localMap.set(c.id, c));
+
+  const incomingIds = new Set<string>();
+  const mergedIncoming = incomingList.map((incoming) => {
+    incomingIds.add(incoming.id);
+    const existing = localMap.get(incoming.id);
+    if (!existing) return incoming;
+
+    return {
+      ...existing,
+      ...incoming,
+      location:
+        incoming.location && incoming.location.latitude && incoming.location.longitude
+          ? incoming.location
+          : existing.location,
+      description: incoming.description || existing.description,
+      title: incoming.title || existing.title,
+      citizenName: incoming.citizenName || existing.citizenName,
+      citizenPhone: incoming.citizenPhone || existing.citizenPhone,
+      image: incoming.image || existing.image,
+      aiAnalysis: incoming.aiAnalysis || existing.aiAnalysis,
+      timeline:
+        incoming.timeline && incoming.timeline.length > 0
+          ? incoming.timeline
+          : existing.timeline,
+      auditTimeline:
+        incoming.auditTimeline && incoming.auditTimeline.length > 0
+          ? incoming.auditTimeline
+          : existing.auditTimeline,
+    };
+  });
+
+  const preservedLocals = localList.filter((c) => !incomingIds.has(c.id));
+  const combined = [...preservedLocals, ...mergedIncoming];
+  combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return combined;
+}
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -200,12 +240,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Fetch authoritative data feeds from Express backend
   useEffect(() => {
-    civicApiClient
-      .getAllComplaints()
-      .then((data) => {
-        if (data?.complaints && Array.isArray(data.complaints) && data.complaints.length > 0) {
-          complaintService.saveAll(data.complaints);
-          setAllComplaintsList(data.complaints);
+    const fetchComplaintsPromise =
+      currentUser.role === 'admin'
+        ? civicApiClient.getAllComplaintsAdmin().catch(() => civicApiClient.getAllComplaints())
+        : currentUser.role === 'citizen'
+        ? civicApiClient.getOwnComplaints().catch(() => civicApiClient.getAllComplaints())
+        : civicApiClient.getAllComplaints();
+
+    fetchComplaintsPromise
+      .then((data: any) => {
+        if (data?.complaints && Array.isArray(data.complaints)) {
+          const currentLocals = complaintService.getAll();
+          const merged = smartMergeComplaints(currentLocals, data.complaints);
+          complaintService.saveAll(merged);
+          setAllComplaintsList(merged);
         }
       })
       .catch((err) => {
@@ -339,29 +387,82 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
 
     // 2. Post directly to authoritative civic API on the Express backend
-    const apiResponse = await civicApiClient.createComplaint({
-      title:
-        data.title ||
-        `${data.category} reported near ${data.location.landmark || data.location.address}`,
-      description: data.description,
-      category: data.category,
-      severity: data.severity,
-      priority: aiAnalysis.priority,
-      citizenPhone: data.citizenPhone || undefined,
-      location: data.location,
-      aiAnalysis: {
-        category: aiAnalysis.category,
+    let authoritative: Complaint;
+    try {
+      const apiResponse = await civicApiClient.createComplaint({
+        title:
+          data.title ||
+          `${data.category} reported near ${data.location.landmark || data.location.address}`,
+        description: data.description,
+        category: data.category,
+        severity: data.severity,
         priority: aiAnalysis.priority,
-        department: aiAnalysis.department,
-        confidence: aiAnalysis.confidence,
-        reasoning: aiAnalysis.reasoning,
-        factors: aiAnalysis.factors,
-        provider: aiAnalysis.provider,
-        providerLabel: aiAnalysis.providerLabel,
-      },
-    });
+        citizenPhone: data.citizenPhone || undefined,
+        location: data.location,
+        aiAnalysis: {
+          category: aiAnalysis.category,
+          priority: aiAnalysis.priority,
+          department: aiAnalysis.department,
+          confidence: aiAnalysis.confidence,
+          reasoning: aiAnalysis.reasoning,
+          factors: aiAnalysis.factors,
+          provider: aiAnalysis.provider,
+          providerLabel: aiAnalysis.providerLabel,
+        },
+      });
 
-    const authoritative = apiResponse.complaint as Complaint;
+      authoritative = {
+        ...(apiResponse.complaint as Complaint),
+        image: data.image || (apiResponse.complaint as any)?.image,
+        citizenName: data.citizenName || (apiResponse.complaint as any)?.citizenName || currentUser.name,
+        citizenPhone: data.citizenPhone || (apiResponse.complaint as any)?.citizenPhone,
+        location: data.location || (apiResponse.complaint as any)?.location,
+      };
+    } catch (apiErr) {
+      console.warn('[AppContext] Notice from remote intake, creating local authoritative record:', apiErr);
+      const year = new Date().getFullYear();
+      const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const fallbackId = `SC-${year}-${rand}`;
+      const now = new Date().toISOString();
+      authoritative = {
+        id: fallbackId,
+        citizenId: currentUser.id,
+        citizenName: data.citizenName || currentUser.name,
+        citizenPhone: data.citizenPhone,
+        title:
+          data.title ||
+          `${data.category} reported near ${data.location.landmark || data.location.address}`,
+        description: data.description,
+        category: data.category,
+        severity: data.severity,
+        status: 'submitted',
+        priority: aiAnalysis.priority,
+        location: data.location,
+        image: data.image,
+        aiCategory: aiAnalysis.category,
+        aiPriority: aiAnalysis.priority,
+        aiDepartment: aiAnalysis.department,
+        aiConfidence: aiAnalysis.confidence,
+        aiReasoning: aiAnalysis.reasoning,
+        aiFactors: aiAnalysis.factors,
+        aiProvider: aiAnalysis.provider,
+        aiTimestamp: now,
+        reviewDecision: 'pending',
+        createdAt: now,
+        updatedAt: now,
+        adminNotes: 'Registered in municipal intake triage queue awaiting administrative review.',
+        timeline: [
+          {
+            status: 'submitted',
+            timestamp: now,
+            title: 'Complaint Registered',
+            description: `Citizen submitted complaint for "${data.category}". Tracking reference: ${fallbackId}.`,
+            actor: data.citizenName || currentUser.name,
+            badgeType: 'citizen',
+          },
+        ],
+      };
+    }
 
     // 3. Update local state with authoritative server record
     complaintService.create(authoritative);

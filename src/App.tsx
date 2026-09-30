@@ -10,6 +10,7 @@ import { GlobalCommandBar } from './components/common/GlobalCommandBar';
 import { AICityAssistantModal } from './components/ai/AICityAssistantModal';
 import { useGlobalKeyboardShortcuts } from './utils/useGlobalKeyboardShortcuts';
 import { AdminRouteGuard } from './components/common/AdminRouteGuard';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 // Citizen Pages
 import { CitizenDashboard } from './pages/citizen/CitizenDashboard';
@@ -70,7 +71,8 @@ const AppLayout: React.FC = () => {
 
         {/* Content View Area */}
         <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 max-w-full min-w-0">
-          <Routes>
+          <ErrorBoundary>
+            <Routes>
             {/* Root redirects to Citizen Home */}
             <Route path="/" element={<Navigate to="/citizen/dashboard" replace />} />
 
@@ -177,6 +179,7 @@ const AppLayout: React.FC = () => {
             {/* Catch-all fallback */}
             <Route path="*" element={<Navigate to="/citizen/dashboard" replace />} />
           </Routes>
+          </ErrorBoundary>
         </main>
       </div>
     </div>

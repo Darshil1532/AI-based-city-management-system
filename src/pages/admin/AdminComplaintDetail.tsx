@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
+import { civicApiClient } from '../../services/api/civicApiClient';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { PriorityBadge } from '../../components/common/PriorityBadge';
 import { AIAnalysisPanel } from '../../components/ai/AIAnalysisPanel';
@@ -65,7 +66,30 @@ export const AdminComplaintDetail: React.FC = () => {
     currentUser,
   } = useApp();
 
-  const complaint = id ? getComplaintById(id) : undefined;
+  const [remoteComplaint, setRemoteComplaint] = useState<Complaint | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const localComplaint = id ? getComplaintById(id) : undefined;
+  const complaint = localComplaint || remoteComplaint || undefined;
+
+  useEffect(() => {
+    if (id && !localComplaint && !remoteComplaint) {
+      setIsLoading(true);
+      civicApiClient
+        .trackComplaint(id)
+        .then((res) => {
+          if (res?.complaint) {
+            setRemoteComplaint(res.complaint as Complaint);
+          }
+        })
+        .catch((err) => {
+          console.warn('[AdminComplaintDetail] Remote lookup notice:', err);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    }
+  }, [id, localComplaint, remoteComplaint]);
 
   // Editable administrator state
   const [selectedCategory, setSelectedCategory] = useState<ComplaintCategory>(
@@ -107,6 +131,17 @@ export const AdminComplaintDetail: React.FC = () => {
 
   const [isSaved, setIsSaved] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
+
+  if (isLoading && !complaint) {
+    return (
+      <div className="max-w-2xl mx-auto text-center py-24 space-y-4 animate-in fade-in">
+        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-xs font-semibold text-slate-500 font-mono">
+          Loading complaint dossier {id}...
+        </p>
+      </div>
+    );
+  }
 
   if (!complaint) {
     return (
@@ -618,42 +653,57 @@ export const AdminComplaintDetail: React.FC = () => {
           </div>
 
           {/* Geographic Location & Map */}
-          <div className="clay-card rounded-3xl p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2 font-mono">
-                <div className="w-6 h-6 rounded-lg clay-inset flex items-center justify-center">
-                  <MapPin className="w-3.5 h-3.5 text-blue-600" />
-                </div>
-                Geographic Verification
-              </span>
-              <code className="text-[10px] font-mono font-bold text-slate-600 clay-badge px-2.5 py-1 rounded-lg">
-                {complaint.location.latitude.toFixed(4)}° N, {Math.abs(complaint.location.longitude).toFixed(4)}° E
-              </code>
-            </div>
+          {(() => {
+            const loc = complaint.location || {
+              latitude: 23.2332,
+              longitude: 77.4338,
+              address: 'Municipal Jurisdiction Area',
+              district: (complaint as any)?.district || 'General',
+            };
+            const lat = typeof loc.latitude === 'number' && !isNaN(loc.latitude) ? loc.latitude : 23.2332;
+            const lng = typeof loc.longitude === 'number' && !isNaN(loc.longitude) ? loc.longitude : 77.4338;
+            const address = loc.address || 'Address registered on file';
+            const landmark = loc.landmark;
 
-            <div className="rounded-2xl overflow-hidden clay-inset p-1 bg-slate-100/50">
-              <SmartCityMap
-                singleMarker={{
-                  latitude: complaint.location.latitude,
-                  longitude: complaint.location.longitude,
-                  title: complaint.title,
-                  category: complaint.category,
-                }}
-                height="h-56"
-                showFilterControls={false}
-              />
-            </div>
-
-            <div className="text-xs text-slate-600 space-y-1 p-3 rounded-2xl clay-inset bg-slate-50/50">
-              <span className="font-bold text-slate-900">Address: </span>
-              <span>{complaint.location.address}</span>
-              {complaint.location.landmark && (
-                <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                  Landmark reference: {complaint.location.landmark}
+            return (
+              <div className="clay-card rounded-3xl p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2 font-mono">
+                    <div className="w-6 h-6 rounded-lg clay-inset flex items-center justify-center">
+                      <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                    </div>
+                    Geographic Verification
+                  </span>
+                  <code className="text-[10px] font-mono font-bold text-slate-600 clay-badge px-2.5 py-1 rounded-lg">
+                    {lat.toFixed(4)}° N, {Math.abs(lng).toFixed(4)}° E
+                  </code>
                 </div>
-              )}
-            </div>
-          </div>
+
+                <div className="rounded-2xl overflow-hidden clay-inset p-1 bg-slate-100/50">
+                  <SmartCityMap
+                    singleMarker={{
+                      latitude: lat,
+                      longitude: lng,
+                      title: complaint.title || 'Civic Issue',
+                      category: complaint.category || 'Other',
+                    }}
+                    height="h-56"
+                    showFilterControls={false}
+                  />
+                </div>
+
+                <div className="text-xs text-slate-600 space-y-1 p-3 rounded-2xl clay-inset bg-slate-50/50">
+                  <span className="font-bold text-slate-900">Address: </span>
+                  <span>{address}</span>
+                  {landmark && (
+                    <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                      Landmark reference: {landmark}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Right Column (5 cols): Administrator Decision & Dispatch Form */}

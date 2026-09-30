@@ -1,7 +1,37 @@
+import fs from 'fs';
+import path from 'path';
 import { INITIAL_COMPLAINTS } from '../../src/data/mockData';
 import { Complaint, ComplaintStatus, TimelineEvent, ComplaintCategory, PriorityLevel, DepartmentName } from '../../src/types';
 import { AuthenticatedUser } from '../middleware/authMiddleware';
 import { getAdminFirestore } from '../lib/firebaseAdmin';
+
+const CACHE_FILE_PATH = path.join(
+  process.platform === 'win32' ? (process.env.TEMP || process.env.TMP || '/tmp') : '/tmp',
+  'smartcity_complaints.json'
+);
+
+function readFromTmpCache(): Complaint[] | null {
+  try {
+    if (fs.existsSync(CACHE_FILE_PATH)) {
+      const data = fs.readFileSync(CACHE_FILE_PATH, 'utf-8');
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    // Ignore cache read failures
+  }
+  return null;
+}
+
+function writeToTmpCache(complaints: Complaint[]): void {
+  try {
+    fs.writeFileSync(CACHE_FILE_PATH, JSON.stringify(complaints), 'utf-8');
+  } catch (err) {
+    // Ignore cache write failures
+  }
+}
 
 export const ALLOWED_TRANSITIONS: Record<ComplaintStatus, ComplaintStatus[]> = {
   submitted: ['assigned', 'resolved'],
@@ -61,6 +91,13 @@ export class ComplaintService {
   }
 
   private initStore(): void {
+    if (process.env.NODE_ENV !== 'test') {
+      const cached = readFromTmpCache();
+      if (cached && cached.length > 0) {
+        this.complaints = cached;
+        return;
+      }
+    }
     // Clone demo records and ensure demo officer naming compliance
     this.complaints = INITIAL_COMPLAINTS.map((c) => ({
       ...c,
@@ -90,6 +127,7 @@ export class ComplaintService {
           this.complaints = Array.from(map.values()).sort(
             (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
+          writeToTmpCache(this.complaints);
         }
       } else {
         // Seed initial complaints to Firestore if completely empty
@@ -106,6 +144,9 @@ export class ComplaintService {
   }
 
   private async persistToFirestore(complaint: Complaint): Promise<void> {
+    if (process.env.NODE_ENV !== 'test') {
+      writeToTmpCache(this.complaints);
+    }
     if (process.env.NODE_ENV === 'test') return;
     try {
       const adminDb = getAdminFirestore();

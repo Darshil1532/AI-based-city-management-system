@@ -40,14 +40,23 @@ export class LocalComplaintService implements IComplaintService {
   }
 
   getByCitizenId(citizenId: string): Complaint[] {
+    this.refreshFromRepository();
     return this.repository.getByCitizenId(citizenId);
   }
 
   getById(id: string): Complaint | undefined {
+    this.refreshFromRepository();
     const norm = id.trim().toUpperCase();
-    return this.complaints.find(
-      (c) => c.id.toUpperCase() === norm || c.id.toUpperCase() === `SC-${norm}`
+    let found = this.complaints.find(
+      (c) =>
+        c.id.toUpperCase() === norm ||
+        c.id.toUpperCase() === `SC-${norm}` ||
+        `SC-${c.id.toUpperCase()}` === norm
     );
+    if (!found) {
+      found = this.repository.getById(id);
+    }
+    return found;
   }
 
   getByIdForCitizen(id: string, citizenId: string): Complaint | undefined {

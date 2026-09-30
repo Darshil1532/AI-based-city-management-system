@@ -89,20 +89,34 @@ export class FirebaseComplaintRepository implements IComplaintRepository {
 
   private async initFirebaseSync(): Promise<void> {
     try {
-      // Sync from authoritative civic API backend
+      // Sync from authoritative civic API backend non-destructively
       if (typeof window !== 'undefined' && typeof fetch !== 'undefined') {
         fetch('/api/complaints')
           .then((res) => (res.ok ? res.json() : null))
           .then((data) => {
             if (data?.complaints && Array.isArray(data.complaints)) {
-              const remoteMap = new Map<string, Complaint>();
-              data.complaints.forEach((c: Complaint) => remoteMap.set(c.id, c));
-              const merged = [...data.complaints];
-              this.complaints.forEach((local) => {
-                if (!remoteMap.has(local.id)) {
-                  merged.push(local);
-                }
+              const localMap = new Map<string, Complaint>();
+              this.complaints.forEach((c) => localMap.set(c.id, c));
+              const mergedIncoming = data.complaints.map((incoming: Complaint) => {
+                const existing = localMap.get(incoming.id);
+                if (!existing) return incoming;
+                return {
+                  ...existing,
+                  ...incoming,
+                  location:
+                    incoming.location && incoming.location.latitude && incoming.location.longitude
+                      ? incoming.location
+                      : existing.location,
+                  description: incoming.description || existing.description,
+                  title: incoming.title || existing.title,
+                  citizenName: incoming.citizenName || existing.citizenName,
+                  citizenPhone: incoming.citizenPhone || existing.citizenPhone,
+                  image: incoming.image || existing.image,
+                };
               });
+              const incomingIds = new Set(data.complaints.map((c: Complaint) => c.id));
+              const preservedLocals = this.complaints.filter((c) => !incomingIds.has(c.id));
+              const merged = [...preservedLocals, ...mergedIncoming];
               merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
               this.complaints = merged;
               this.persistCache();
@@ -172,14 +186,58 @@ export class FirebaseComplaintRepository implements IComplaintRepository {
   }
 
   getAll(): Complaint[] {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.COMPLAINTS);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length >= this.complaints.length) {
+          this.complaints = parsed;
+        }
+      }
+    } catch (e) {}
     return [...this.complaints];
   }
 
   getById(id: string): Complaint | undefined {
-    return this.complaints.find((c) => c.id === id);
+    const norm = id.trim().toUpperCase();
+    let found = this.complaints.find(
+      (c) =>
+        c.id.toUpperCase() === norm ||
+        c.id.toUpperCase() === `SC-${norm}` ||
+        `SC-${c.id.toUpperCase()}` === norm
+    );
+    if (!found) {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEYS.COMPLAINTS);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            found = parsed.find(
+              (c: Complaint) =>
+                c.id.toUpperCase() === norm ||
+                c.id.toUpperCase() === `SC-${norm}` ||
+                `SC-${c.id.toUpperCase()}` === norm
+            );
+            if (found && !this.complaints.some((c) => c.id === found!.id)) {
+              this.complaints.unshift(found);
+            }
+          }
+        }
+      } catch (e) {}
+    }
+    return found;
   }
 
   getByCitizenId(citizenId: string): Complaint[] {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.COMPLAINTS);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length >= this.complaints.length) {
+          this.complaints = parsed;
+        }
+      }
+    } catch (e) {}
     return this.complaints.filter((c) => c.citizenId === citizenId);
   }
 

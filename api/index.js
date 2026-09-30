@@ -260,6 +260,10 @@ async function callGeminiChatWithTools(ai, prompt, systemInstruction, executeToo
   throw lastError || new Error("All Gemini chat models failed.");
 }
 
+// server/services/complaintService.ts
+import fs from "fs";
+import path from "path";
+
 // src/data/mockData.ts
 var INITIAL_COMPLAINTS = [
   {
@@ -1073,6 +1077,29 @@ function getAdminFirestore() {
 }
 
 // server/services/complaintService.ts
+var CACHE_FILE_PATH = path.join(
+  process.platform === "win32" ? process.env.TEMP || process.env.TMP || "/tmp" : "/tmp",
+  "smartcity_complaints.json"
+);
+function readFromTmpCache() {
+  try {
+    if (fs.existsSync(CACHE_FILE_PATH)) {
+      const data = fs.readFileSync(CACHE_FILE_PATH, "utf-8");
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+  }
+  return null;
+}
+function writeToTmpCache(complaints) {
+  try {
+    fs.writeFileSync(CACHE_FILE_PATH, JSON.stringify(complaints), "utf-8");
+  } catch (err) {
+  }
+}
 var ALLOWED_TRANSITIONS = {
   submitted: ["assigned", "resolved"],
   assigned: ["in_progress", "submitted"],
@@ -1106,6 +1133,13 @@ var ComplaintService = class {
     this.syncWithFirestore();
   }
   initStore() {
+    if (process.env.NODE_ENV !== "test") {
+      const cached = readFromTmpCache();
+      if (cached && cached.length > 0) {
+        this.complaints = cached;
+        return;
+      }
+    }
     this.complaints = INITIAL_COMPLAINTS.map((c) => ({
       ...c,
       assignedOfficer: c.assignedOfficer ? "Demo Municipal Officer" : void 0
@@ -1133,6 +1167,7 @@ var ComplaintService = class {
           this.complaints = Array.from(map.values()).sort(
             (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
+          writeToTmpCache(this.complaints);
         }
       } else {
         const batch = adminDb.batch();
@@ -1147,6 +1182,9 @@ var ComplaintService = class {
     }
   }
   async persistToFirestore(complaint) {
+    if (process.env.NODE_ENV !== "test") {
+      writeToTmpCache(this.complaints);
+    }
     if (process.env.NODE_ENV === "test") return;
     try {
       const adminDb = getAdminFirestore();
