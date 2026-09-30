@@ -78,7 +78,7 @@ export class InsightService implements IInsightService {
             title: `Systemic ${cat} Recurrence Pattern Detected`,
             detectedPattern: `${list.length} unresolved incidents reported in ${cat}. High concentration indicates systemic civic asset maintenance requirement.`,
             recommendation: `Conduct coordinated field inspection by ${targetDept} and prioritize planned maintenance over emergency ad-hoc repairs.`,
-            location: sample.location.address || 'Urban Municipal Sector',
+            location: sample.location?.address || sample.location?.district || 'Urban Municipal Sector',
             priority: 'High',
             suggestedDepartment: targetDept,
             relatedComplaintIds: list.map((c) => c.id).slice(0, 5),

@@ -79,9 +79,10 @@ export const ReportIssuePage: React.FC = () => {
       errors.description = 'Description exceeds the 1200 character limit.';
     }
 
-    if (!location.address.trim()) {
+    if (!location?.address?.trim()) {
       errors.location = 'A valid street address or location pin is required.';
     } else if (
+      !location ||
       isNaN(location.latitude) ||
       location.latitude < -90 ||
       location.latitude > 90 ||

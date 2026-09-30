@@ -165,7 +165,7 @@ export class DemoAIProvider implements IAIProvider {
 
     // 3. Geographic Context & Spatial Proximity
     if (location) {
-      const locText = `${location.address} ${location.landmark || ''} ${location.district || ''}`.toLowerCase();
+      const locText = `${location.address || ''} ${location.landmark || ''} ${location.district || ''}`.toLowerCase();
       if (locText.includes('market') || locText.includes('commercial') || locText.includes('bus stand') || locText.includes('isbt') || locText.includes('station')) {
         factors.push('High-density pedestrian/transit zone increases civic response urgency');
         publicImpactScore = Math.min(10, publicImpactScore + 2);
@@ -178,9 +178,9 @@ export class DemoAIProvider implements IAIProvider {
     }
 
     // 4. Co-located Complaints & Clustering Factor
-    if (location && existingComplaints.length > 0) {
+    if (location && typeof location.latitude === 'number' && typeof location.longitude === 'number' && existingComplaints.length > 0) {
       const nearbyCount = existingComplaints.filter((c) => {
-        if (!c.location) return false;
+        if (!c.location || typeof c.location.latitude !== 'number' || typeof c.location.longitude !== 'number') return false;
         const dLat = (c.location.latitude - location.latitude) * 111000;
         const dLng = (c.location.longitude - location.longitude) * 111000 * Math.cos((location.latitude * Math.PI) / 180);
         const dist = Math.sqrt(dLat * dLat + dLng * dLng);
@@ -246,7 +246,7 @@ export class DemoAIProvider implements IAIProvider {
         priority: 'High',
         department: 'Public Works Department',
         suggestedDepartment: 'Public Works Department',
-        location: roadIssues[0].location.district || roadIssues[0].location.address || 'Main Market Road Corridor',
+        location: roadIssues[0]?.location?.district || roadIssues[0]?.location?.address || 'Main Market Road Corridor',
         relatedComplaintIds: roadIssues.map((c) => c.id).slice(0, 5),
         potentialCauseHypothesis: 'Stormwater pooling combined with heavy transit axle loads causing accelerated sub-grade degradation.',
         estimatedImpact: 'Reduces transit vehicle damage and prevents peak-hour congestion bottlenecks.',
@@ -264,7 +264,7 @@ export class DemoAIProvider implements IAIProvider {
         priority: 'Medium',
         department: 'Sanitation Department',
         suggestedDepartment: 'Sanitation Department',
-        location: wasteIssues[0].location.district || wasteIssues[0].location.address || 'Market Stalls Sector',
+        location: wasteIssues[0]?.location?.district || wasteIssues[0]?.location?.address || 'Market Stalls Sector',
         relatedComplaintIds: wasteIssues.map((c) => c.id).slice(0, 5),
         potentialCauseHypothesis: 'Underestimated vendor biowaste volume during weekend trading peaks.',
         estimatedImpact: 'Eliminates public health risks and restores sidewalk accessibility.',
@@ -282,7 +282,7 @@ export class DemoAIProvider implements IAIProvider {
         priority: 'High',
         department: 'Water Supply Department',
         suggestedDepartment: 'Water Supply Department',
-        location: waterIssues[0].location.district || waterIssues[0].location.address || 'Hospital Road Utility Corridor',
+        location: waterIssues[0]?.location?.district || waterIssues[0]?.location?.address || 'Hospital Road Utility Corridor',
         relatedComplaintIds: waterIssues.map((c) => c.id).slice(0, 3),
         potentialCauseHypothesis: 'Aging ductile iron pipeline joint seal failure under elevated morning booster pump pressure.',
         estimatedImpact: 'Conserves potable water and prevents pavement structural undermining.',

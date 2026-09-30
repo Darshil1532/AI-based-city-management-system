@@ -200,10 +200,12 @@ export const ComplaintConfirmationPage: React.FC = () => {
             Geographic Location
           </span>
           <span className="text-xs font-bold text-slate-900 block truncate">
-            {complaint.location.landmark || complaint.location.address}
+            {complaint.location?.landmark || complaint.location?.address || 'Municipal Zone'}
           </span>
           <span className="font-mono text-[10px] text-slate-500">
-            {complaint.location.latitude.toFixed(4)}°N, {Math.abs(complaint.location.longitude).toFixed(4)}°E
+            {complaint.location?.latitude != null && complaint.location?.longitude != null
+              ? `${complaint.location.latitude.toFixed(4)}°N, ${Math.abs(complaint.location.longitude).toFixed(4)}°E`
+              : 'Registered on municipal file'}
           </span>
         </div>
       </div>
@@ -230,18 +232,22 @@ export const ComplaintConfirmationPage: React.FC = () => {
           </div>
           <div className="rounded-2xl overflow-hidden border border-slate-200/80 shadow-md">
             <SmartCityMap
-              singleMarker={{
-                latitude: complaint.location.latitude,
-                longitude: complaint.location.longitude,
-                title: complaint.title,
-                category: complaint.category,
-              }}
+              singleMarker={
+                complaint.location?.latitude != null && complaint.location?.longitude != null
+                  ? {
+                      latitude: complaint.location.latitude,
+                      longitude: complaint.location.longitude,
+                      title: complaint.title,
+                      category: complaint.category,
+                    }
+                  : undefined
+              }
               height="h-56"
               showFilterControls={false}
             />
           </div>
           <p className="text-[11px] text-slate-500 font-medium">
-            Address: {complaint.location.address}
+            Address: {complaint.location?.address || 'Recorded on municipal file'}
           </p>
         </div>
 

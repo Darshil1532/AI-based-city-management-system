@@ -81,7 +81,7 @@ export const AnalyticsPage: React.FC = () => {
   const districtData = useMemo(() => {
     const counts: Record<string, number> = {};
     complaints.forEach((c) => {
-      const dist = c.location.district || 'Downtown Commercial';
+      const dist = c.location?.district || 'Downtown Commercial';
       counts[dist] = (counts[dist] || 0) + 1;
     });
     return Object.entries(counts).map(([district, count]) => ({

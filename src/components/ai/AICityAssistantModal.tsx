@@ -195,8 +195,8 @@ export const AICityAssistantModal: React.FC = () => {
                 latitude: lat,
                 longitude: lng,
                 address: geo.address,
-                landmark: geo.landmark || prev.location.landmark,
-                district: geo.district || prev.location.district,
+                landmark: geo.landmark || prev.location?.landmark || '',
+                district: geo.district || prev.location?.district || '',
               },
             }
             : null
@@ -999,7 +999,7 @@ export const AICityAssistantModal: React.FC = () => {
                     <div className="flex items-center gap-1.5 text-[11px] text-slate-500 bg-slate-100/70 p-2 rounded-xl clay-inset">
                       <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                       <span className="font-medium text-slate-700 truncate">
-                        {draftedComplaint.location.landmark || draftedComplaint.location.address}
+                        {draftedComplaint.location?.landmark || draftedComplaint.location?.address || 'Location Coordinates Logged'}
                       </span>
                     </div>
 

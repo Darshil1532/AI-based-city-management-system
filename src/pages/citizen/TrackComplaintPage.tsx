@@ -294,10 +294,12 @@ export const TrackComplaintPage: React.FC = () => {
                 <div className="pt-2 border-t border-slate-200/60">
                   <span className="text-slate-400 block text-[11px] font-mono font-semibold">Geographic Site:</span>
                   <span className="font-semibold text-slate-800 block mt-1">
-                    {complaint.location.landmark || complaint.location.address}
+                    {complaint.location?.landmark || complaint.location?.address || 'Municipal Zone'}
                   </span>
                   <span className="text-[10px] font-mono text-slate-400 block mt-0.5">
-                    {complaint.location.latitude.toFixed(4)}° N, {Math.abs(complaint.location.longitude).toFixed(4)}° E
+                    {complaint.location?.latitude != null && complaint.location?.longitude != null
+                      ? `${complaint.location.latitude.toFixed(4)}° N, ${Math.abs(complaint.location.longitude).toFixed(4)}° E`
+                      : 'Location logged on municipal file'}
                   </span>
                 </div>
               </div>
@@ -312,12 +314,16 @@ export const TrackComplaintPage: React.FC = () => {
 
               <div className="rounded-2xl overflow-hidden border border-slate-200/80 shadow-md">
                 <SmartCityMap
-                  singleMarker={{
-                    latitude: complaint.location.latitude,
-                    longitude: complaint.location.longitude,
-                    title: complaint.title,
-                    category: complaint.category,
-                  }}
+                  singleMarker={
+                    complaint.location?.latitude != null && complaint.location?.longitude != null
+                      ? {
+                          latitude: complaint.location.latitude,
+                          longitude: complaint.location.longitude,
+                          title: complaint.title,
+                          category: complaint.category,
+                        }
+                      : undefined
+                  }
                   height="h-48"
                   showFilterControls={false}
                 />

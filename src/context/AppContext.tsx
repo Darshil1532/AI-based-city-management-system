@@ -392,7 +392,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const apiResponse = await civicApiClient.createComplaint({
         title:
           data.title ||
-          `${data.category} reported near ${data.location.landmark || data.location.address}`,
+          `${data.category} reported near ${data.location?.landmark || data.location?.address || 'Municipal Zone'}`,
         description: data.description,
         category: data.category,
         severity: data.severity,
@@ -431,7 +431,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         citizenPhone: data.citizenPhone,
         title:
           data.title ||
-          `${data.category} reported near ${data.location.landmark || data.location.address}`,
+          `${data.category} reported near ${data.location?.landmark || data.location?.address || 'Municipal Zone'}`,
         description: data.description,
         category: data.category,
         severity: data.severity,

@@ -154,6 +154,10 @@ export class HotspotService implements IHotspotService {
 
     // Helper to evaluate if two complaints should be clustered together
     const areComplaintsRelated = (a: Complaint, b: Complaint): boolean => {
+      if (!a.location?.latitude || !a.location?.longitude || !b.location?.latitude || !b.location?.longitude) {
+        return false;
+      }
+
       const dist = haversineDistanceMeters(
         a.location.latitude,
         a.location.longitude,
@@ -230,8 +234,8 @@ export class HotspotService implements IHotspotService {
     // 4. Generate Potential Hotspots
     const detectedHotspots: Hotspot[] = mergedClusters.map((cluster, index) => {
       // Centroid
-      const totalLat = cluster.reduce((sum, c) => sum + c.location.latitude, 0);
-      const totalLng = cluster.reduce((sum, c) => sum + c.location.longitude, 0);
+      const totalLat = cluster.reduce((sum, c) => sum + (c.location?.latitude ?? 23.2332), 0);
+      const totalLng = cluster.reduce((sum, c) => sum + (c.location?.longitude ?? 77.4338), 0);
       const centerLat = Number((totalLat / cluster.length).toFixed(6));
       const centerLng = Number((totalLng / cluster.length).toFixed(6));
 
@@ -293,8 +297,8 @@ export class HotspotService implements IHotspotService {
       return {
         id: `hs-dyn-${index + 1}`,
         name: `Potential Hotspot • ${dominantCategory} (${cluster.length} reports)`,
-        locationName: anchor.location.landmark || anchor.location.address || 'Urban Sector Corridor',
-        district: anchor.location.district || 'Smart City District',
+        locationName: anchor?.location?.landmark || anchor?.location?.address || 'Urban Sector Corridor',
+        district: anchor?.location?.district || 'Smart City District',
         center: {
           latitude: centerLat,
           longitude: centerLng,

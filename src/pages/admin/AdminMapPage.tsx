@@ -121,7 +121,7 @@ export const AdminMapPage: React.FC = () => {
                   <div className="flex justify-between py-1 border-b border-slate-200/50">
                     <span className="text-slate-400 font-mono">Address:</span>
                     <span className="font-bold text-slate-800 text-right max-w-[180px] truncate">
-                      {selectedComplaint.location.address}
+                      {selectedComplaint.location?.address || selectedComplaint.location?.district || 'Municipal Zone'}
                     </span>
                   </div>
                   <div className="flex justify-between py-1">

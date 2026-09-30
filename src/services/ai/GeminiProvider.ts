@@ -93,7 +93,7 @@ export class GeminiProvider implements IAIProvider {
         category: c.category,
         severity: c.severity,
         status: c.status,
-        location: c.location.district || c.location.landmark || (c.location.address ? c.location.address.split(',')[0] : 'Municipal Area'),
+        location: c.location?.district || c.location?.landmark || (c.location?.address ? c.location.address.split(',')[0] : 'Municipal Area'),
         description: c.description,
       }));
 
