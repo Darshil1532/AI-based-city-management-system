@@ -3082,8 +3082,8 @@ function createApp() {
 }
 var app = createApp();
 
-// api/index.ts
-var index_default = app;
+// server/apiEntry.ts
+var apiEntry_default = app;
 export {
-  index_default as default
+  apiEntry_default as default
 };
