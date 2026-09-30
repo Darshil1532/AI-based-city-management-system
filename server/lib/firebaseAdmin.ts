@@ -10,7 +10,7 @@ let adminApp: App | null = null;
  * Fails fast with a clear error if credentials or project ID are missing in production.
  */
 export function assertProductionReadyConfig(): void {
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
     const hasServiceAccount = !!process.env.FIREBASE_SERVICE_ACCOUNT;
     const hasGoogleAppCredentials = !!process.env.GOOGLE_APPLICATION_CREDENTIALS;
 
@@ -32,7 +32,7 @@ export function assertProductionReadyConfig(): void {
 /**
  * Initializes Firebase Admin SDK if not already initialized.
  * In production: throws if credentials are missing or initialization fails.
- * In test/dev: allows fallback for local developer ergonomics.
+ * In test/dev/Vercel: allows fallback for local developer ergonomics and preview deployments.
  */
 export function getFirebaseAdminApp(): App | null {
   if (adminApp) return adminApp;
@@ -46,7 +46,7 @@ export function getFirebaseAdminApp(): App | null {
 
     const projectId = process.env.FIREBASE_PROJECT_ID || firebaseConfig.projectId;
     if (!projectId) {
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
         throw new Error('[FirebaseAdmin] Missing Firebase project ID in production.');
       }
       return null;
@@ -62,7 +62,7 @@ export function getFirebaseAdminApp(): App | null {
         return adminApp;
       } catch (e: any) {
         const msg = `[FirebaseAdmin] Failed to parse FIREBASE_SERVICE_ACCOUNT JSON: ${e?.message || e}`;
-        if (process.env.NODE_ENV === 'production') {
+        if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
           throw new Error(msg);
         }
         console.warn(msg);
@@ -77,12 +77,12 @@ export function getFirebaseAdminApp(): App | null {
       return adminApp;
     }
 
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
       throw new Error('[FirebaseAdmin] No valid credentials provided in production.');
     }
     return null;
   } catch (err: any) {
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
       throw err;
     }
     console.info('[FirebaseAdmin] Admin SDK initialization notice:', err?.message || err);
@@ -109,7 +109,7 @@ export async function verifyFirebaseIdToken(token: string): Promise<DecodedIdTok
  * Returns admin Firestore instance if available, or null.
  */
 export function getAdminFirestore(): Firestore | null {
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
     const hasCredentials = !!process.env.FIREBASE_SERVICE_ACCOUNT || !!process.env.GOOGLE_APPLICATION_CREDENTIALS;
     if (!hasCredentials) {
       throw new Error('[FirebaseAdmin] Firestore Admin is required in production but credentials are not configured.');
@@ -118,7 +118,7 @@ export function getAdminFirestore(): Firestore | null {
 
   const app = getFirebaseAdminApp();
   if (!app) {
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
       throw new Error('[FirebaseAdmin] Firestore Admin is required in production but unavailable.');
     }
     return null;
@@ -126,7 +126,7 @@ export function getAdminFirestore(): Firestore | null {
   try {
     return getFirestore(app);
   } catch (err: any) {
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
       throw err;
     }
     return null;

@@ -1006,7 +1006,7 @@ function getFirebaseAdminApp() {
     }
     const projectId = process.env.FIREBASE_PROJECT_ID || firebase_applet_config_default.projectId;
     if (!projectId) {
-      if (process.env.NODE_ENV === "production") {
+      if (process.env.NODE_ENV === "production" && !process.env.VERCEL) {
         throw new Error("[FirebaseAdmin] Missing Firebase project ID in production.");
       }
       return null;
@@ -1021,7 +1021,7 @@ function getFirebaseAdminApp() {
         return adminApp;
       } catch (e) {
         const msg = `[FirebaseAdmin] Failed to parse FIREBASE_SERVICE_ACCOUNT JSON: ${e?.message || e}`;
-        if (process.env.NODE_ENV === "production") {
+        if (process.env.NODE_ENV === "production" && !process.env.VERCEL) {
           throw new Error(msg);
         }
         console.warn(msg);
@@ -1033,12 +1033,12 @@ function getFirebaseAdminApp() {
       });
       return adminApp;
     }
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV === "production" && !process.env.VERCEL) {
       throw new Error("[FirebaseAdmin] No valid credentials provided in production.");
     }
     return null;
   } catch (err) {
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV === "production" && !process.env.VERCEL) {
       throw err;
     }
     console.info("[FirebaseAdmin] Admin SDK initialization notice:", err?.message || err);
@@ -1053,7 +1053,7 @@ async function verifyFirebaseIdToken(token) {
   return await getAuth(app2).verifyIdToken(token, true);
 }
 function getAdminFirestore() {
-  if (process.env.NODE_ENV === "production") {
+  if (process.env.NODE_ENV === "production" && !process.env.VERCEL) {
     const hasCredentials = !!process.env.FIREBASE_SERVICE_ACCOUNT || !!process.env.GOOGLE_APPLICATION_CREDENTIALS;
     if (!hasCredentials) {
       throw new Error("[FirebaseAdmin] Firestore Admin is required in production but credentials are not configured.");
@@ -1061,7 +1061,7 @@ function getAdminFirestore() {
   }
   const app2 = getFirebaseAdminApp();
   if (!app2) {
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV === "production" && !process.env.VERCEL) {
       throw new Error("[FirebaseAdmin] Firestore Admin is required in production but unavailable.");
     }
     return null;
@@ -1069,7 +1069,7 @@ function getAdminFirestore() {
   try {
     return getFirestore(app2);
   } catch (err) {
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV === "production" && !process.env.VERCEL) {
       throw err;
     }
     return null;
@@ -3083,7 +3083,25 @@ function createApp() {
 var app = createApp();
 
 // server/apiEntry.ts
-var apiEntry_default = app;
+function handler(req, res) {
+  try {
+    const matchedPath = req.headers?.["x-matched-path"];
+    if (matchedPath && typeof matchedPath === "string" && !matchedPath.includes("index.js")) {
+      req.url = matchedPath;
+    } else if (req.url && (req.url === "/api/index.js" || req.url.startsWith("/api/index.js"))) {
+      req.url = req.url.replace("/api/index.js", "") || "/";
+    }
+    return app(req, res);
+  } catch (err) {
+    console.error("[Vercel API Handler Fatal Error]:", err);
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: err?.message || "Internal Server Error",
+        code: "INTERNAL_SERVERLESS_ERROR"
+      });
+    }
+  }
+}
 export {
-  apiEntry_default as default
+  handler as default
 };
